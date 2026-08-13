@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutGrid,
   BarChart2,
+  CalendarDays,
   Activity,
   MessageCircle,
   Pill,
@@ -12,13 +13,14 @@ import {
 import { supabase } from "../supabaseClient";
 
 const NAV_ITEMS = [
-  { to: "/",            Icon: LayoutGrid,    label: "Overview"       },
-  { to: "/insights",    Icon: BarChart2,     label: "Insights"       },
-  { to: "/triage",      Icon: Activity,      label: "Symptom Check"  },
-  { to: "/chat",        Icon: MessageCircle, label: "Coach Chat"     },
-  { to: "/medications", Icon: Pill,          label: "Medications"    },
-  { to: "/documents",   Icon: FileText,      label: "Documents Q&A"  },
-  { to: "/journal",     Icon: BookOpen,      label: "Health Journal" },
+  { to: "/",             Icon: LayoutGrid,    label: "Overview"       },
+  { to: "/insights",     Icon: BarChart2,     label: "Insights"       },
+  { to: "/appointments", Icon: CalendarDays,  label: "Appointments"   },
+  { to: "/triage",       Icon: Activity,      label: "Symptom Check"  },
+  { to: "/chat",         Icon: MessageCircle, label: "Coach Chat"     },
+  { to: "/medications",  Icon: Pill,          label: "Medications"    },
+  { to: "/documents",    Icon: FileText,      label: "Documents Q&A"  },
+  { to: "/journal",      Icon: BookOpen,      label: "Health Journal" },
 ];
 
 function NavList({ onNavigate, userEmail }) {

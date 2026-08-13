@@ -1,6 +1,6 @@
-﻿from fastapi import FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import triage, medications, documents, journal, chat
+from app.routers import triage, medications, documents, journal, chat, appointments
 
 app = FastAPI(
     title="VitalAI",
@@ -21,6 +21,7 @@ app.include_router(medications.router)
 app.include_router(documents.router)
 app.include_router(journal.router)
 app.include_router(chat.router)
+app.include_router(appointments.router)
 
 
 @app.get("/")

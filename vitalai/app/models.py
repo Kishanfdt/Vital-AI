@@ -95,5 +95,25 @@ class JournalTrendResponse(BaseModel):
     )
 
 
+class AppointmentCreate(BaseModel):
+    provider_name: str = Field(..., description="Name of the healthcare provider or facility")
+    appointment_date: str = Field(..., description="ISO 8601 datetime string, e.g. 2024-09-01T10:30:00")
+    reason: str = Field(..., description="Reason for the appointment")
+    notes: str | None = Field(None, description="Optional pre-visit notes")
 
 
+class AppointmentUpdate(BaseModel):
+    provider_name: str | None = None
+    appointment_date: str | None = None
+    reason: str | None = None
+    notes: str | None = None
+
+
+class AppointmentResponse(BaseModel):
+    id: str
+    user_id: str
+    provider_name: str
+    appointment_date: str
+    reason: str
+    notes: str | None = None
+    created_at: str

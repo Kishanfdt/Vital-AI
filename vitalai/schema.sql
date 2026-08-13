@@ -83,3 +83,21 @@ as $$
   order by embedding <=> query_embedding
   limit match_count;
 $$;
+
+-- 6. appointments table (Phase F — Care Coordination)
+create table if not exists appointments (
+  id               uuid primary key default gen_random_uuid(),
+  user_id          uuid references auth.users not null,
+  provider_name    text not null,
+  appointment_date timestamptz not null,
+  reason           text not null,
+  notes            text,
+  created_at       timestamptz default now()
+);
+
+alter table appointments enable row level security;
+
+drop policy if exists "Users manage own appointments" on appointments;
+create policy "Users manage own appointments" on appointments
+  for all using (auth.uid() = user_id);
+
