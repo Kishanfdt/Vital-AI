@@ -79,3 +79,10 @@ class DocumentItem(BaseModel):
     created_at: datetime | None = None
 
 
+class JournalTrendResponse(BaseModel):
+    total_entries: int
+    trend_summary: str
+    detected_clusters: list[str] = Field(default_factory=list)
+
+
+
