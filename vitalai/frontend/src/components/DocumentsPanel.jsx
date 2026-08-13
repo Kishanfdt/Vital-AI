@@ -251,8 +251,11 @@ export default function DocumentsPanel({ token }) {
               )}
             </div>
           )}
+
+          {askResult.disclaimer && <p className="disclaimer">{askResult.disclaimer}</p>}
         </div>
       )}
     </div>
   );
 }
+

@@ -9,13 +9,14 @@ A multi-featured LLM-powered health & wellness API built with FastAPI, Claude, a
 | Symptom triage | `POST /triage` | ✅ Working |
 | Wellness coach chat (streaming) | `POST /chat` | ✅ Working |
 | Journal entries (CRUD) | `POST/GET /journal` | ✅ Working |
-| Journal trend analysis | `GET /journal/trends` | 🚧 Milestone 4 (see `app/routers/journal.py`) |
-| Medication interaction checker | `/medications` | 🚧 Milestone 2 (see `app/routers/medications.py`) |
-| Document Q&A (RAG) | `/documents` | 🚧 Milestone 3 (see `app/routers/documents.py`) |
+| Journal trend analysis | `GET /journal/trends` | ✅ Working (Milestone 4) |
+| Medication interaction checker | `/medications` | ✅ Working (Milestone 2) |
+| Document Q&A (RAG) | `/documents` | ✅ Working (Milestone 3) |
 
-Each unfinished router has a module docstring with a concrete, step-by-step build plan.
+Each router is fully implemented and operational.
 
 ## Setup
+
 
 1. **Create a Supabase project** at supabase.com.
 2. **Run `schema.sql`** in the Supabase SQL editor to create tables, enable pgvector, and set up RLS.
@@ -63,10 +64,11 @@ curl -X POST http://localhost:8000/triage \
 This project is intentionally sequenced so each milestone teaches a distinct LLM engineering skill:
 
 1. ✅ **Structured output** (`/triage`) - forcing reliable JSON via tool-choice forcing
-2. 🚧 **Tool calling** (`/medications`) - letting the model decide when to call an external API
-3. 🚧 **RAG** (`/documents`) - chunking, embeddings, vector similarity search
-4. 🚧 **Embeddings for analysis** (`/journal/trends`) - semantic trend detection over time
+2. ✅ **Tool calling** (`/medications`) - letting the model decide when to call an external API
+3. ✅ **RAG** (`/documents`) - chunking, embeddings, vector similarity search
+4. ✅ **Embeddings for analysis** (`/journal/trends`) - semantic trend detection over time
 5. ✅ **Streaming + memory** (`/chat`) - SSE-style responses, conversation state
+
 
 Work through them in order - each one builds on patterns from the last.
 

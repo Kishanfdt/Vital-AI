@@ -205,8 +205,11 @@ export default function JournalPanel({ token }) {
           <div style={{ whiteSpace: "pre-line", lineHeight: 1.6, color: "#3f4c48" }}>
             {trendResult.trend_summary}
           </div>
+
+          {trendResult.disclaimer && <p className="disclaimer">{trendResult.disclaimer}</p>}
         </div>
       )}
     </div>
   );
 }
+

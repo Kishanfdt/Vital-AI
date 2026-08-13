@@ -154,9 +154,10 @@ Vital-AI/
 | `POST` | `/triage` | Analyzes symptoms and returns structured urgency & triage JSON | ✅ Active |
 | `POST` | `/chat` | Streams conversational AI wellness coach responses (SSE) | ✅ Active |
 | `GET/POST` | `/journal` | Manages patient daily health journal entries | ✅ Active |
-| `GET` | `/journal/trends` | Generates semantic trend analysis across journal history | 🚧 Active |
-| `POST` | `/medications` | Checks drug-drug interactions & precautions | 🚧 Active |
-| `POST` | `/documents` | Queries medical knowledge base via RAG | 🚧 Active |
+| `GET` | `/journal/trends` | Generates semantic trend analysis & k-means clusters across journal history | ✅ Active |
+| `POST` | `/medications` | Checks drug-drug interactions & precautions via OpenFDA tool calling | ✅ Active |
+| `POST` | `/documents` | Queries medical knowledge base via Voyage AI & Supabase RAG | ✅ Active |
+
 
 ---
 
