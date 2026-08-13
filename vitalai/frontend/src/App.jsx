@@ -3,6 +3,7 @@ import { supabase } from "./supabaseClient";
 import Login from "./components/Login";
 import TriagePanel from "./components/TriagePanel";
 import ChatPanel from "./components/ChatPanel";
+import MedicationsPanel from "./components/MedicationsPanel";
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -50,9 +51,14 @@ export default function App() {
         <button className={`tab ${tab === "chat" ? "active" : ""}`} onClick={() => setTab("chat")}>
           Coach chat
         </button>
+        <button className={`tab ${tab === "medications" ? "active" : ""}`} onClick={() => setTab("medications")}>
+          Medications
+        </button>
       </div>
 
-      {tab === "triage" ? <TriagePanel token={token} /> : <ChatPanel token={token} />}
+      {tab === "triage" && <TriagePanel token={token} />}
+      {tab === "chat" && <ChatPanel token={token} />}
+      {tab === "medications" && <MedicationsPanel token={token} />}
     </div>
   );
 }

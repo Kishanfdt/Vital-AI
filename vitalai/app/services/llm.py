@@ -55,3 +55,75 @@ def stream_chat(system_prompt: str, messages: list[dict]):
         delta = chunk.choices[0].delta
         if delta and delta.content:
             yield delta.content
+
+
+def run_agentic_tool_loop(
+    system_prompt: str,
+    user_message: str,
+    tools: list[dict],
+    available_functions: dict[str, callable],
+    max_tokens: int = 1024,
+) -> tuple[str, dict]:
+    """
+    Executes an unforced tool-calling conversation loop.
+    Returns (final_assistant_message, dict_of_tool_outputs_executed).
+    """
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_message},
+    ]
+
+    response = client.chat.completions.create(
+        model=settings.llm_model,
+        max_tokens=max_tokens,
+        messages=messages,
+        tools=tools,
+        tool_choice="auto",
+    )
+
+    response_message = response.choices[0].message
+    tool_calls = response_message.tool_calls
+    tool_outputs = {}
+
+    if tool_calls:
+        assistant_dict = {
+            "role": "assistant",
+            "content": response_message.content or "",
+            "tool_calls": [
+                {
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments,
+                    },
+                }
+                for tc in tool_calls
+            ],
+        }
+        messages.append(assistant_dict)
+
+        for tool_call in tool_calls:
+            function_name = tool_call.function.name
+            function_to_call = available_functions.get(function_name)
+            if function_to_call:
+                try:
+                    function_args = json.loads(tool_call.function.arguments)
+                except Exception:
+                    function_args = {}
+                output = function_to_call(**function_args)
+                tool_outputs[function_name] = output
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": json.dumps(output),
+                })
+
+        second_response = client.chat.completions.create(
+            model=settings.llm_model,
+            max_tokens=max_tokens,
+            messages=messages,
+        )
+        return second_response.choices[0].message.content or "", tool_outputs
+
+    return response_message.content or "", tool_outputs
