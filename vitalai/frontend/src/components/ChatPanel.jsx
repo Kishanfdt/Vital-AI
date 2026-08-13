@@ -1,13 +1,14 @@
 import { useRef, useState } from "react";
 import { Spinner } from "./Spinner";
+import { EmptyState, EmptyChat } from "./EmptyState";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function ChatPanel({ token }) {
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [input, setInput]       = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
   const logRef = useRef(null);
 
   async function sendMessage(e) {
@@ -37,7 +38,7 @@ export default function ChatPanel({ token }) {
         throw new Error(body?.detail?.[0]?.msg || body?.detail || `Request failed (${response.status})`);
       }
 
-      const reader = response.body.getReader();
+      const reader  = response.body.getReader();
       const decoder = new TextDecoder();
 
       while (true) {
@@ -64,51 +65,55 @@ export default function ChatPanel({ token }) {
   }
 
   return (
-    <div className="card">
-      <h2>Wellness Coach Chat</h2>
-      <p>General lifestyle, nutrition, and stress-management guidance — not a substitute for a clinician.</p>
+    <div className="page-content">
+      <div className="card">
+        <h2>Wellness Coach Chat</h2>
+        <p style={{ marginBottom: 16 }}>
+          General lifestyle, nutrition, and stress-management guidance — not a substitute for a clinician.
+        </p>
 
-      <div className="chat-log" ref={logRef} aria-label="Conversation history">
-        {messages.length === 0 && (
-          <div className="empty-state">
-            <span className="empty-state-icon" aria-hidden="true">💬</span>
-            <p>No messages yet. Ask about sleep, stress, nutrition, or exercise to get started.</p>
-          </div>
-        )}
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`bubble ${m.role === "user" ? "bubble-user" : "bubble-assistant"}`}
-            aria-label={m.role === "user" ? "You" : "Coach"}
+        <div className="chat-log" ref={logRef} aria-label="Conversation history" aria-live="polite">
+          {messages.length === 0 && (
+            <EmptyState
+              illustration={EmptyChat}
+              message="No messages yet — ask about sleep, stress, nutrition, or exercise to get started."
+            />
+          )}
+          {messages.map((m, i) => (
+            <div
+              key={i}
+              className={`bubble ${m.role === "user" ? "bubble-user" : "bubble-assistant"}`}
+              aria-label={m.role === "user" ? "You" : "Wellness coach"}
+            >
+              {m.content || (loading && i === messages.length - 1 ? "…" : "")}
+            </div>
+          ))}
+        </div>
+
+        {error && <p className="error-text" role="alert">{error}</p>}
+
+        <form onSubmit={sendMessage} style={{ display: "flex", gap: 10, marginTop: 12 }}>
+          <input
+            id="chat-input"
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask about sleep, stress, nutrition…"
+            aria-label="Message to wellness coach"
+            style={{ flex: 1 }}
+          />
+          <button
+            className="btn-primary"
+            type="submit"
+            disabled={loading || !input.trim()}
+            aria-label="Send message"
+            style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}
           >
-            {m.content || (loading && i === messages.length - 1 ? "…" : "")}
-          </div>
-        ))}
+            {loading ? <Spinner size="sm" /> : null}
+            Send
+          </button>
+        </form>
       </div>
-
-      {error && <p className="error-text" role="alert">{error}</p>}
-
-      <form onSubmit={sendMessage} style={{ display: "flex", gap: 10, marginTop: 12 }}>
-        <input
-          id="chat-input"
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about sleep, stress, nutrition…"
-          aria-label="Message to wellness coach"
-          style={{ flex: 1 }}
-        />
-        <button
-          className="btn-primary"
-          type="submit"
-          disabled={loading || !input.trim()}
-          aria-label="Send message"
-          style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}
-        >
-          {loading ? <Spinner size="sm" /> : null}
-          Send
-        </button>
-      </form>
     </div>
   );
 }

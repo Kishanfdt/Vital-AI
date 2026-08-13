@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 
@@ -17,10 +18,29 @@ import MedicationsPanel from "./components/MedicationsPanel";
 import DocumentsPanel from "./components/DocumentsPanel";
 import JournalPanel from "./components/JournalPanel";
 
+/* ── Animated route container (re-mounts on pathname change) ── */
+function AnimatedRoutes({ token, userEmail }) {
+  const location = useLocation();
+  return (
+    /* key={pathname} causes React to unmount+remount, triggering pageEnter CSS */
+    <div key={location.pathname} className="page-content" style={{ display: "contents" }}>
+      <Routes location={location}>
+        <Route path="/"            element={<Overview        userEmail={userEmail} token={token} />} />
+        <Route path="/triage"      element={<TriagePanel     token={token} />} />
+        <Route path="/chat"        element={<ChatPanel       token={token} />} />
+        <Route path="/medications" element={<MedicationsPanel token={token} />} />
+        <Route path="/documents"   element={<DocumentsPanel  token={token} />} />
+        <Route path="/journal"     element={<JournalPanel    token={token} />} />
+        <Route path="*"            element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
+  );
+}
+
 /* ── Auth gate ─────────────────────────────────────────────── */
 function AuthenticatedApp({ session }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const token = session.access_token;
+  const token     = session.access_token;
   const userEmail = session.user.email;
 
   return (
@@ -37,21 +57,15 @@ function AuthenticatedApp({ session }) {
         <div className="mobile-topbar-brand">
           <span
             style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: "#c76f4f",
-              display: "inline-block",
-              marginRight: 8,
+              width: 8, height: 8, borderRadius: "50%",
+              background: "#c76f4f", display: "inline-block", marginRight: 8,
             }}
             aria-hidden="true"
           />
           <span
             style={{
               fontFamily: '"Fraunces", Georgia, serif',
-              fontSize: 18,
-              fontWeight: 600,
-              color: "white",
+              fontSize: 17, fontWeight: 600, color: "white",
             }}
           >
             VitalAI
@@ -60,7 +74,7 @@ function AuthenticatedApp({ session }) {
         <button
           className="hamburger"
           onClick={() => setMobileOpen((p) => !p)}
-          aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
           aria-expanded={mobileOpen}
         >
           <span />
@@ -69,18 +83,10 @@ function AuthenticatedApp({ session }) {
         </button>
       </div>
 
-      {/* Main content */}
+      {/* Main content with route-keyed animation */}
       <main className="main-content" id="main-content">
         <div className="main-content-inner">
-          <Routes>
-            <Route path="/" element={<Overview userEmail={userEmail} token={token} />} />
-            <Route path="/triage" element={<TriagePanel token={token} />} />
-            <Route path="/chat" element={<ChatPanel token={token} />} />
-            <Route path="/medications" element={<MedicationsPanel token={token} />} />
-            <Route path="/documents" element={<DocumentsPanel token={token} />} />
-            <Route path="/journal" element={<JournalPanel token={token} />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <AnimatedRoutes token={token} userEmail={userEmail} />
         </div>
       </main>
     </div>
@@ -89,7 +95,7 @@ function AuthenticatedApp({ session }) {
 
 /* ── Root ──────────────────────────────────────────────────── */
 export default function App() {
-  const [session, setSession] = useState(undefined); // undefined = still checking
+  const [session, setSession] = useState(undefined);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -103,7 +109,6 @@ export default function App() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // Still loading
   if (session === undefined) return null;
 
   return (

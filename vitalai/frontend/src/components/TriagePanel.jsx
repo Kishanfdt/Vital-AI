@@ -11,11 +11,11 @@ const URGENCY_LABELS = {
 
 export default function TriagePanel({ token }) {
   const [symptoms, setSymptoms] = useState("");
-  const [age, setAge] = useState("");
+  const [age, setAge]           = useState("");
   const [duration, setDuration] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [result, setResult] = useState(null);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+  const [result, setResult]     = useState(null);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -53,7 +53,7 @@ export default function TriagePanel({ token }) {
   }
 
   return (
-    <div>
+    <div className="page-content">
       <div className="card">
         <h2>Symptom Check</h2>
         <p>Describe what you're feeling and get a cautious urgency assessment with next steps.</p>
@@ -68,7 +68,7 @@ export default function TriagePanel({ token }) {
             required
           />
 
-          <label htmlFor="triage-age">Age (optional)</label>
+          <label htmlFor="triage-age">Age <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, opacity: 0.65 }}>(optional)</span></label>
           <input
             id="triage-age"
             type="number"
@@ -78,7 +78,7 @@ export default function TriagePanel({ token }) {
             placeholder="e.g. 35"
           />
 
-          <label htmlFor="triage-duration">How long has this been going on? (optional)</label>
+          <label htmlFor="triage-duration">Duration <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, opacity: 0.65 }}>(optional)</span></label>
           <input
             id="triage-duration"
             type="text"
@@ -95,25 +95,25 @@ export default function TriagePanel({ token }) {
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <Spinner size="sm" /> Assessing…
                 </span>
-              ) : (
-                "Get assessment"
-              )}
+              ) : "Get assessment"}
             </button>
           </div>
         </form>
       </div>
 
       {result && (
-        <div className="card">
+        <div className="card card-elevated">
           <span className={`urgency-badge urgency-${result.urgency}`}>
             {URGENCY_LABELS[result.urgency] || result.urgency}
           </span>
-          <h3 style={{ marginTop: 14 }}>Reasoning</h3>
+          <h3 style={{ marginTop: 16 }}>Reasoning</h3>
           <p>{result.reasoning}</p>
-          <h3>Recommended next steps</h3>
-          <ul style={{ paddingLeft: 20, marginTop: 6 }}>
+          <h3 style={{ marginTop: 16 }}>Recommended next steps</h3>
+          <ul style={{ paddingLeft: 20, marginTop: 8 }}>
             {result.recommended_next_steps.map((step, i) => (
-              <li key={i} style={{ marginBottom: 4, lineHeight: 1.5 }}>{step}</li>
+              <li key={i} style={{ marginBottom: 5, lineHeight: "var(--lh-normal)", fontSize: "var(--text-sm)" }}>
+                {step}
+              </li>
             ))}
           </ul>
           <p className="disclaimer">{result.disclaimer}</p>

@@ -1,24 +1,23 @@
 import { useEffect, useState } from "react";
 import { Spinner, SkeletonLines } from "./Spinner";
 import { useToast } from "./Toast";
+import { EmptyState, EmptyMedications } from "./EmptyState";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function MedicationsPanel({ token }) {
   const toast = useToast();
   const [medications, setMedications] = useState([]);
-  const [name, setName] = useState("");
-  const [dosage, setDosage] = useState("");
+  const [name, setName]               = useState("");
+  const [dosage, setDosage]           = useState("");
   const [loadingMeds, setLoadingMeds] = useState(true);
-  const [adding, setAdding] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
-  const [checking, setChecking] = useState(false);
-  const [error, setError] = useState("");
+  const [adding, setAdding]           = useState(false);
+  const [deletingId, setDeletingId]   = useState(null);
+  const [checking, setChecking]       = useState(false);
+  const [error, setError]             = useState("");
   const [checkResult, setCheckResult] = useState(null);
 
-  useEffect(() => {
-    fetchMedications();
-  }, [token]);
+  useEffect(() => { fetchMedications(); }, [token]);
 
   async function fetchMedications() {
     setLoadingMeds(true);
@@ -40,24 +39,18 @@ export default function MedicationsPanel({ token }) {
   async function handleAddMedication(e) {
     e.preventDefault();
     if (!name.trim()) return;
-
     setAdding(true);
     setError("");
     try {
       const response = await fetch(`${API_URL}/medications`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name: name.trim(), dosage: dosage.trim() || null }),
       });
-
       if (!response.ok) {
         const body = await response.json().catch(() => null);
         throw new Error(body?.detail || `Failed to add medication (${response.status})`);
       }
-
       setName("");
       setDosage("");
       await fetchMedications();
@@ -77,7 +70,7 @@ export default function MedicationsPanel({ token }) {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!response.ok) throw new Error(`Failed to delete medication (${response.status})`);
+      if (!response.ok) throw new Error(`Failed to delete (${response.status})`);
       setMedications((prev) => prev.filter((m) => m.id !== id));
       toast(`${medName} removed.`, "info");
     } catch (err) {
@@ -91,18 +84,15 @@ export default function MedicationsPanel({ token }) {
     setChecking(true);
     setError("");
     setCheckResult(null);
-
     try {
       const response = await fetch(`${API_URL}/medications/check`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (!response.ok) {
         const body = await response.json().catch(() => null);
         throw new Error(body?.detail || `Interaction check failed (${response.status})`);
       }
-
       const data = await response.json();
       setCheckResult(data);
       toast("Interaction check complete.", "success");
@@ -114,8 +104,8 @@ export default function MedicationsPanel({ token }) {
   }
 
   return (
-    <div>
-      {/* Add Medication */}
+    <div className="page-content">
+      {/* Add Form */}
       <div className="card">
         <h2>My Medications</h2>
         <p>Track your current prescription and over-the-counter medications.</p>
@@ -134,7 +124,12 @@ export default function MedicationsPanel({ token }) {
               />
             </div>
             <div>
-              <label htmlFor="med-dosage">Dosage / Frequency (optional)</label>
+              <label htmlFor="med-dosage">
+                Dosage / Frequency{" "}
+                <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, opacity: 0.65 }}>
+                  (optional)
+                </span>
+              </label>
               <input
                 id="med-dosage"
                 type="text"
@@ -158,40 +153,26 @@ export default function MedicationsPanel({ token }) {
           </div>
         </form>
 
-        <hr style={{ border: "none", borderTop: "1px solid var(--line)", margin: "20px 0" }} />
+        <hr className="divider" />
 
-        <h3>Active Medication List</h3>
+        <h3 style={{ marginBottom: 14 }}>Active Medication List</h3>
 
         {loadingMeds ? (
-          <div style={{ marginTop: 12 }}>
-            <SkeletonLines lines={3} />
-          </div>
+          <div style={{ marginTop: 12 }}><SkeletonLines lines={3} /></div>
         ) : medications.length === 0 ? (
-          <div className="empty-state">
-            <span className="empty-state-icon" aria-hidden="true">💊</span>
-            <p>No medications added yet — add your first one above.</p>
-          </div>
+          <EmptyState
+            illustration={EmptyMedications}
+            message="No medications added yet — add your first one above."
+          />
         ) : (
-          <ul style={{ listStyle: "none", padding: 0, margin: "12px 0 20px" }} aria-label="Medication list">
+          <ul style={{ listStyle: "none", padding: 0, margin: "0 0 20px" }} aria-label="Medication list">
             {medications.map((med) => (
-              <li
-                key={med.id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "10px 14px",
-                  background: "var(--paper)",
-                  borderRadius: 8,
-                  marginBottom: 8,
-                  border: "1px solid var(--line)",
-                }}
-              >
+              <li key={med.id} className="med-item">
                 <div>
-                  <strong>{med.name}</strong>
+                  <span style={{ fontWeight: 600, fontSize: "var(--text-sm)" }}>{med.name}</span>
                   {med.dosage && (
-                    <span style={{ color: "var(--muted)", marginLeft: 8, fontSize: 13 }}>
-                      ({med.dosage})
+                    <span style={{ color: "var(--muted)", marginLeft: 8, fontSize: "var(--text-xs)" }}>
+                      {med.dosage}
                     </span>
                   )}
                 </div>
@@ -200,7 +181,7 @@ export default function MedicationsPanel({ token }) {
                   onClick={() => handleDelete(med.id, med.name)}
                   disabled={deletingId === med.id}
                   aria-label={`Remove ${med.name}`}
-                  style={{ padding: "4px 10px", fontSize: 12 }}
+                  style={{ padding: "5px 11px", fontSize: "var(--text-xs)" }}
                 >
                   {deletingId === med.id ? "Removing…" : "Remove"}
                 </button>
@@ -209,7 +190,7 @@ export default function MedicationsPanel({ token }) {
           </ul>
         )}
 
-        <div className="row">
+        <div className="row" style={{ marginTop: medications.length === 0 ? 0 : 4 }}>
           <button
             className="btn-primary"
             onClick={handleCheckInteractions}
@@ -227,23 +208,23 @@ export default function MedicationsPanel({ token }) {
 
       {/* Interaction Results */}
       {checkResult && (
-        <div className="card">
+        <div className="card card-elevated">
           <span
             className={`urgency-badge ${
               checkResult.has_interactions ? "urgency-seek_emergency_care" : "urgency-self_care"
             }`}
           >
-            {checkResult.has_interactions ? "Potential Interactions / Warnings" : "No Major Interactions Detected"}
+            {checkResult.has_interactions ? "Potential Interactions" : "No Major Interactions Detected"}
           </span>
 
-          <h3 style={{ marginTop: 14 }}>Interaction & Safety Analysis</h3>
-          <div style={{ whiteSpace: "pre-line", lineHeight: 1.6, color: "#3f4c48" }}>
+          <h3 style={{ marginTop: 16 }}>Interaction &amp; Safety Analysis</h3>
+          <p style={{ whiteSpace: "pre-line", lineHeight: "var(--lh-normal)" }}>
             {checkResult.analysis}
-          </div>
+          </p>
 
           {checkResult.medications_checked.length > 0 && (
-            <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 16 }}>
-              Medications evaluated: {checkResult.medications_checked.join(", ")}
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--muted)", marginTop: 14 }}>
+              Evaluated: {checkResult.medications_checked.join(", ")}
             </p>
           )}
 

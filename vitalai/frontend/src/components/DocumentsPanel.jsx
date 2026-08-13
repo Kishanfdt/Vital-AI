@@ -1,26 +1,25 @@
 import { useEffect, useState } from "react";
 import { Spinner, SkeletonLines } from "./Spinner";
 import { useToast } from "./Toast";
+import { EmptyState, EmptyDocuments } from "./EmptyState";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function DocumentsPanel({ token }) {
   const toast = useToast();
-  const [documents, setDocuments] = useState([]);
+  const [documents, setDocuments]     = useState([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading]     = useState(false);
   const [uploadError, setUploadError] = useState("");
 
-  const [question, setQuestion] = useState("");
-  const [asking, setAsking] = useState(false);
-  const [askError, setAskError] = useState("");
-  const [askResult, setAskResult] = useState(null);
+  const [question, setQuestion]       = useState("");
+  const [asking, setAsking]           = useState(false);
+  const [askError, setAskError]       = useState("");
+  const [askResult, setAskResult]     = useState(null);
   const [showSources, setShowSources] = useState(false);
 
-  useEffect(() => {
-    fetchDocuments();
-  }, [token]);
+  useEffect(() => { fetchDocuments(); }, [token]);
 
   async function fetchDocuments() {
     setLoadingDocs(true);
@@ -42,25 +41,20 @@ export default function DocumentsPanel({ token }) {
   async function handleFileUpload(e) {
     e.preventDefault();
     if (!selectedFile) return;
-
     setUploading(true);
     setUploadError("");
-
     const formData = new FormData();
     formData.append("file", selectedFile);
-
     try {
       const response = await fetch(`${API_URL}/documents/upload`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-
       if (!response.ok) {
         const body = await response.json().catch(() => null);
         throw new Error(body?.detail || `Upload failed (${response.status})`);
       }
-
       const data = await response.json();
       setSelectedFile(null);
       const inputEl = document.getElementById("pdf-file-input");
@@ -77,27 +71,20 @@ export default function DocumentsPanel({ token }) {
   async function handleAskQuestion(e) {
     e.preventDefault();
     if (!question.trim()) return;
-
     setAsking(true);
     setAskError("");
     setAskResult(null);
     setShowSources(false);
-
     try {
       const response = await fetch(`${API_URL}/documents/ask`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ question: question.trim() }),
       });
-
       if (!response.ok) {
         const body = await response.json().catch(() => null);
         throw new Error(body?.detail || `Failed to answer question (${response.status})`);
       }
-
       const data = await response.json();
       setAskResult(data);
       toast("Answer ready.", "success");
@@ -109,11 +96,13 @@ export default function DocumentsPanel({ token }) {
   }
 
   return (
-    <div>
+    <div className="page-content">
       {/* Upload Card */}
       <div className="card">
-        <h2>Medical Document Q&A</h2>
-        <p>Upload lab reports, clinical notes, or prescriptions (PDF) and ask questions grounded in your document context.</p>
+        <h2>Medical Document Q&amp;A</h2>
+        <p style={{ marginBottom: 20 }}>
+          Upload lab reports, clinical notes, or prescriptions (PDF) and ask questions grounded in your document context.
+        </p>
 
         <form onSubmit={handleFileUpload} style={{ marginBottom: 24 }}>
           <label htmlFor="pdf-file-input">Upload PDF Document</label>
@@ -137,43 +126,29 @@ export default function DocumentsPanel({ token }) {
           </div>
         </form>
 
-        <hr style={{ border: "none", borderTop: "1px solid var(--line)", margin: "20px 0" }} />
+        <hr className="divider" />
 
-        <h3>Uploaded Documents</h3>
+        <h3 style={{ marginBottom: 14 }}>Uploaded Documents</h3>
 
         {loadingDocs ? (
-          <div style={{ marginTop: 12 }}>
-            <SkeletonLines lines={3} />
-          </div>
+          <div style={{ marginTop: 12 }}><SkeletonLines lines={3} /></div>
         ) : documents.length === 0 ? (
-          <div className="empty-state">
-            <span className="empty-state-icon" aria-hidden="true">📄</span>
-            <p>No documents uploaded yet — upload a PDF above to get started.</p>
-          </div>
+          <EmptyState
+            illustration={EmptyDocuments}
+            message="No documents uploaded yet — upload a PDF above to get started."
+          />
         ) : (
-          <ul style={{ listStyle: "none", padding: 0, margin: "12px 0" }} aria-label="Uploaded documents">
+          <ul style={{ listStyle: "none", padding: 0, margin: "0 0 4px" }} aria-label="Uploaded documents">
             {documents.map((doc, idx) => (
-              <li
-                key={idx}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "10px 14px",
-                  background: "var(--paper)",
-                  borderRadius: 8,
-                  marginBottom: 8,
-                  border: "1px solid var(--line)",
-                }}
-              >
+              <li key={idx} className="med-item">
                 <div>
-                  <strong>📄 {doc.filename}</strong>
-                  <span style={{ color: "var(--muted)", marginLeft: 10, fontSize: 13 }}>
+                  <span style={{ fontWeight: 600, fontSize: "var(--text-sm)" }}>📄 {doc.filename}</span>
+                  <span style={{ color: "var(--muted)", marginLeft: 8, fontSize: "var(--text-xs)" }}>
                     ({doc.chunks_count} {doc.chunks_count === 1 ? "chunk" : "chunks"})
                   </span>
                 </div>
                 {doc.created_at && (
-                  <span style={{ color: "var(--muted)", fontSize: 12 }}>
+                  <span style={{ color: "var(--muted)", fontSize: "var(--text-xs)" }}>
                     {new Date(doc.created_at).toLocaleDateString()}
                   </span>
                 )}
@@ -183,10 +158,12 @@ export default function DocumentsPanel({ token }) {
         )}
       </div>
 
-      {/* Ask Question Card */}
+      {/* Q&A Card */}
       <div className="card">
-        <h2>Ask Questions About Your Documents</h2>
-        <p>Answers are strictly grounded in your uploaded document context — not general knowledge.</p>
+        <h2>Ask Your Documents</h2>
+        <p style={{ marginBottom: 20 }}>
+          Answers are strictly grounded in your uploaded document context — not general knowledge.
+        </p>
 
         <form onSubmit={handleAskQuestion}>
           <label htmlFor="rag-question">Your Question</label>
@@ -200,8 +177,8 @@ export default function DocumentsPanel({ token }) {
           />
 
           {documents.length === 0 && (
-            <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>
-              Upload a document first to enable Q&A.
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--muted)", marginTop: 6 }}>
+              Upload a document first to enable Q&amp;A.
             </p>
           )}
 
@@ -224,21 +201,23 @@ export default function DocumentsPanel({ token }) {
         </form>
       </div>
 
-      {/* Q&A Result Card */}
+      {/* Answer Card */}
       {askResult && (
-        <div className="card">
+        <div className="card card-elevated">
           <h3>Answer</h3>
-          <p style={{ whiteSpace: "pre-line", lineHeight: 1.6 }}>{askResult.answer}</p>
+          <p style={{ whiteSpace: "pre-line", lineHeight: "var(--lh-normal)", marginTop: 8 }}>
+            {askResult.answer}
+          </p>
 
-          {askResult.sources && askResult.sources.length > 0 && (
+          {askResult.sources?.length > 0 && (
             <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px dashed var(--line)" }}>
               <button
                 className="btn-ghost"
                 type="button"
-                onClick={() => setShowSources((prev) => !prev)}
+                onClick={() => setShowSources((p) => !p)}
                 aria-expanded={showSources}
                 aria-controls="sources-list"
-                style={{ padding: "6px 12px", fontSize: 13 }}
+                style={{ padding: "6px 12px", fontSize: "var(--text-xs)" }}
               >
                 {showSources
                   ? "▼ Hide Retrieved Sources"
@@ -253,17 +232,17 @@ export default function DocumentsPanel({ token }) {
                       style={{
                         background: "var(--paper)",
                         border: "1px solid var(--line)",
-                        borderRadius: 6,
+                        borderRadius: "var(--radius-xs)",
                         padding: "10px 12px",
                         marginBottom: 8,
-                        fontSize: 13,
+                        fontSize: "var(--text-xs)",
                         color: "#3f4c48",
                       }}
                     >
-                      <strong style={{ display: "block", marginBottom: 4, color: "var(--deep-teal)" }}>
+                      <strong style={{ display: "block", marginBottom: 4, color: "var(--deep-teal)", fontSize: "var(--text-xs)" }}>
                         Source Chunk {i + 1}
                       </strong>
-                      <p style={{ margin: 0, whiteSpace: "pre-line" }}>{src}</p>
+                      <p style={{ margin: 0, whiteSpace: "pre-line", lineHeight: "var(--lh-normal)" }}>{src}</p>
                     </div>
                   ))}
                 </div>

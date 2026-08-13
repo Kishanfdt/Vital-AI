@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SkeletonLines } from "./Spinner";
+import { BarChart2 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -9,31 +10,31 @@ const FEATURES = [
     to: "/triage",
     icon: "🩺",
     title: "Symptom Check",
-    desc: "Describe what you're feeling and get an urgency assessment with next steps.",
+    desc: "Urgency assessment with structured next steps.",
   },
   {
     to: "/chat",
     icon: "💬",
     title: "Coach Chat",
-    desc: "Real-time streaming AI wellness coach for lifestyle, nutrition & stress guidance.",
+    desc: "Streaming AI guidance for lifestyle & nutrition.",
   },
   {
     to: "/medications",
     icon: "💊",
     title: "Medications",
-    desc: "Track your meds and check for drug-drug interactions via OpenFDA in one click.",
+    desc: "Track meds and check drug interactions via OpenFDA.",
   },
   {
     to: "/documents",
     icon: "📄",
     title: "Documents Q&A",
-    desc: "Upload a lab report or clinical note and ask questions — answers grounded in your document.",
+    desc: "Grounded Q&A over your uploaded clinical documents.",
   },
   {
     to: "/journal",
     icon: "📓",
     title: "Health Journal",
-    desc: "Log daily health and mood entries; get AI-powered 30-day trend analysis.",
+    desc: "Log entries and get AI-powered 30-day trend analysis.",
   },
 ];
 
@@ -44,65 +45,59 @@ function getGreeting() {
   return "Good evening";
 }
 
-/* Truncates trend summary to ~2 sentences for the dashboard snippet */
-function snippetify(text, maxLen = 220) {
-  if (!text) return "";
-  // Try to cut at a sentence boundary
-  const trimmed = text.trim();
-  if (trimmed.length <= maxLen) return trimmed;
-  const cut = trimmed.lastIndexOf(".", maxLen);
-  return cut > 60 ? trimmed.slice(0, cut + 1) + " …" : trimmed.slice(0, maxLen) + "…";
+function formatDate() {
+  return new Date().toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
 }
 
-/* ── Live Trend Snippet Card ───────────────────────────────── */
-function TrendSnippet({ token }) {
+function snippetify(text, maxLen = 210) {
+  if (!text) return "";
+  const t = text.trim();
+  if (t.length <= maxLen) return t;
+  const cut = t.lastIndexOf(".", maxLen);
+  return cut > 60 ? t.slice(0, cut + 1) + " …" : t.slice(0, maxLen) + "…";
+}
+
+/* ── Live Trend Card ─────────────────────────────────────────── */
+function TrendCard({ token }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [trend, setTrend] = useState(null);   // { total_entries, trend_summary, detected_clusters }
-  const [empty, setEmpty] = useState(false);  // no entries yet
+  const [trend, setTrend]   = useState(null);
+  const [empty, setEmpty]   = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    async function fetchTrend() {
+    async function load() {
       try {
         const res = await fetch(`${API_URL}/journal/trends`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) throw new Error("fetch failed");
+        if (!res.ok) throw new Error();
         const data = await res.json();
         if (!cancelled) {
-          if (data.total_entries === 0) {
-            setEmpty(true);
-          } else {
-            setTrend(data);
-          }
+          if (data.total_entries === 0) setEmpty(true);
+          else setTrend(data);
         }
       } catch {
-        if (!cancelled) setEmpty(true); // treat error same as no data
+        if (!cancelled) setEmpty(true);
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
-    fetchTrend();
+    load();
     return () => { cancelled = true; };
   }, [token]);
 
-  const cardStyle = {
-    background: "var(--white)",
-    border: "1px solid var(--line)",
-    borderRadius: 14,
-    padding: "20px 24px",
-    marginBottom: 28,
-    cursor: "pointer",
-    transition: "box-shadow 0.18s ease, border-color 0.18s ease",
-  };
-
   if (loading) {
     return (
-      <div style={cardStyle}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-          <span style={{ fontSize: 18 }} aria-hidden="true">📓</span>
-          <strong style={{ fontSize: 14, color: "var(--deep-teal)" }}>Recent Wellness Trend</strong>
+      <div className="trend-snippet-card" style={{ cursor: "default" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--deep-teal)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Recent Wellness Trend
+          </span>
         </div>
         <SkeletonLines lines={3} />
       </div>
@@ -112,50 +107,37 @@ function TrendSnippet({ token }) {
   if (empty) {
     return (
       <button
-        style={{ ...cardStyle, width: "100%", textAlign: "left", border: "1px dashed var(--line)" }}
+        className="trend-snippet-card empty"
         onClick={() => navigate("/journal")}
         aria-label="Go to Health Journal to start tracking"
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-          <span style={{ fontSize: 18 }} aria-hidden="true">📓</span>
-          <strong style={{ fontSize: 14, color: "var(--deep-teal)" }}>Recent Wellness Trend</strong>
-        </div>
-        <p style={{ fontSize: 13, color: "var(--muted)", margin: 0, lineHeight: 1.5 }}>
+        <p style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--teal-soft)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
+          Recent Wellness Trend
+        </p>
+        <p style={{ color: "var(--muted)", margin: 0 }}>
           No journal entries yet — start logging how you feel to unlock AI-powered 30-day trend analysis.
         </p>
-        <span style={{ display: "inline-block", marginTop: 12, fontSize: 13, fontWeight: 600, color: "var(--clay)" }}>
+        <span style={{ display: "inline-block", marginTop: 10, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--clay)", letterSpacing: "0.02em" }}>
           Write your first entry →
         </span>
       </button>
     );
   }
 
-  const snippet = snippetify(trend.trend_summary);
+  const snippet  = snippetify(trend.trend_summary);
   const clusters = trend.detected_clusters || [];
 
   return (
     <button
-      style={{ ...cardStyle, width: "100%", textAlign: "left" }}
+      className="trend-snippet-card"
       onClick={() => navigate("/journal")}
       aria-label="View full trend analysis in Health Journal"
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 18 }} aria-hidden="true">📓</span>
-          <strong style={{ fontSize: 14, color: "var(--deep-teal)" }}>Recent Wellness Trend</strong>
-        </div>
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            padding: "3px 10px",
-            background: "#e4efe8",
-            color: "#2f6b4f",
-            borderRadius: 999,
-            letterSpacing: "0.03em",
-            textTransform: "uppercase",
-          }}
-        >
+        <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--teal-soft)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Recent Wellness Trend
+        </span>
+        <span className="urgency-badge urgency-self_care" style={{ fontSize: 10 }}>
           {trend.total_entries} {trend.total_entries === 1 ? "entry" : "entries"}
         </span>
       </div>
@@ -166,52 +148,79 @@ function TrendSnippet({ token }) {
             <span
               key={i}
               style={{
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: 600,
-                padding: "2px 9px",
+                padding: "2px 8px",
                 background: "var(--paper)",
                 border: "1px solid var(--line)",
                 borderRadius: 999,
                 color: "var(--deep-teal)",
               }}
             >
-              🏷️ {c}
+              🏷 {c}
             </span>
           ))}
         </div>
       )}
 
-      <p style={{ fontSize: 13, color: "#3f4c48", margin: 0, lineHeight: 1.55 }}>{snippet}</p>
+      <p style={{ margin: 0, fontSize: "var(--text-sm)", color: "#3f4c48", lineHeight: "var(--lh-normal)" }}>
+        {snippet}
+      </p>
 
-      <span style={{ display: "inline-block", marginTop: 10, fontSize: 12, fontWeight: 600, color: "var(--clay)" }}>
+      <span style={{ display: "inline-block", marginTop: 10, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--clay)", letterSpacing: "0.02em" }}>
         View full analysis →
       </span>
     </button>
   );
 }
 
-/* ── Overview Page ──────────────────────────────────────────── */
+/* ── Overview / Health Summary Hub ─────────────────────────── */
 export default function Overview({ userEmail, token }) {
-  const navigate = useNavigate();
-  const firstName = userEmail?.split("@")[0] ?? "there";
+  const navigate   = useNavigate();
+  const firstName  = userEmail?.split("@")[0] ?? "there";
 
   return (
-    <div>
-      {/* Greeting */}
-      <div className="overview-greeting">
-        <h1>{getGreeting()}, {firstName} 👋</h1>
-        <p>
-          Welcome to VitalAI — your AI-powered health &amp; wellness platform.
-        </p>
+    <div className="page-content">
+      {/* ── Header ── */}
+      <div className="overview-header">
+        <p className="overview-date">{formatDate()}</p>
+        <h1>{getGreeting()}, {firstName}</h1>
+        <p>Here's your health summary for today.</p>
       </div>
 
-      {/* Live trend snippet from /journal/trends */}
-      <TrendSnippet token={token} />
+      {/* ── Quick Triage Entry ── */}
+      <button
+        className="feeling-card"
+        onClick={() => navigate("/triage")}
+        aria-label="Check your symptoms now"
+      >
+        <div className="feeling-card-left">
+          <h3>How are you feeling today?</h3>
+          <p>Tap to get an AI symptom assessment in under 30 seconds.</p>
+        </div>
+        <div className="feeling-pill-group" aria-hidden="true">
+          <span className="feeling-pill">Good</span>
+          <span className="feeling-pill">OK</span>
+          <span className="feeling-pill">Not great</span>
+        </div>
+      </button>
 
-      {/* Feature grid */}
-      <h2 style={{ fontSize: 16, fontWeight: 600, color: "var(--deep-teal)", marginBottom: 14, letterSpacing: 0 }}>
-        Your tools
-      </h2>
+      {/* ── Live Wellness Trend ── */}
+      <TrendCard token={token} />
+
+      {/* ── Phase E Insights Placeholder ── */}
+      <div className="insights-placeholder" role="presentation">
+        <div className="insights-placeholder-icon">
+          <BarChart2 size={18} strokeWidth={1.5} />
+        </div>
+        <div>
+          <strong>Insights &amp; Analytics</strong>
+          <p>Deep health analytics and longitudinal trend visualisations — coming in Phase E.</p>
+        </div>
+      </div>
+
+      {/* ── Feature Grid ── */}
+      <span className="section-label">Your tools</span>
       <div className="feature-grid">
         {FEATURES.map(({ to, icon, title, desc }) => (
           <button
