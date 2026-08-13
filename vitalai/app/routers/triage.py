@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends
 from app.models import TriageRequest, TriageResponse
 from app.services.llm import get_structured_output
@@ -65,3 +66,23 @@ def triage_symptoms(request: TriageRequest, user_id: str = Depends(get_current_u
         pass  # don't fail the request if logging fails
 
     return response
+
+
+@router.get("/history")
+def get_triage_history(user_id: str = Depends(get_current_user)):
+    """Return last 90 days of triage history for the authenticated user.
+    Results are ordered newest-first, capped at 200 records.
+    Used by the /insights analytics dashboard.
+    """
+    since = (datetime.utcnow() - timedelta(days=90)).isoformat()
+    result = (
+        supabase.table("triage_history")
+        .select("id, urgency, symptoms, created_at")
+        .eq("user_id", user_id)
+        .gte("created_at", since)
+        .order("created_at", desc=True)
+        .limit(200)
+        .execute()
+    )
+    return result.data or []
+

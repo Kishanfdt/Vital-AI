@@ -12,6 +12,7 @@ import { ToastProvider } from "./components/Toast";
 import Sidebar from "./components/Sidebar";
 import Login from "./components/Login";
 import Overview from "./components/Overview";
+import InsightsPanel from "./components/InsightsPanel";
 import TriagePanel from "./components/TriagePanel";
 import ChatPanel from "./components/ChatPanel";
 import MedicationsPanel from "./components/MedicationsPanel";
@@ -26,6 +27,7 @@ function AnimatedRoutes({ token, userEmail }) {
     <div key={location.pathname} className="page-content" style={{ display: "contents" }}>
       <Routes location={location}>
         <Route path="/"            element={<Overview        userEmail={userEmail} token={token} />} />
+        <Route path="/insights"    element={<InsightsPanel   token={token} />} />
         <Route path="/triage"      element={<TriagePanel     token={token} />} />
         <Route path="/chat"        element={<ChatPanel       token={token} />} />
         <Route path="/medications" element={<MedicationsPanel token={token} />} />

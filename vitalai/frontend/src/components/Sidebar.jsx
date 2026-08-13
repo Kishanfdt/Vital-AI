@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutGrid,
+  BarChart2,
   Activity,
   MessageCircle,
   Pill,
@@ -12,6 +13,7 @@ import { supabase } from "../supabaseClient";
 
 const NAV_ITEMS = [
   { to: "/",            Icon: LayoutGrid,    label: "Overview"       },
+  { to: "/insights",    Icon: BarChart2,     label: "Insights"       },
   { to: "/triage",      Icon: Activity,      label: "Symptom Check"  },
   { to: "/chat",        Icon: MessageCircle, label: "Coach Chat"     },
   { to: "/medications", Icon: Pill,          label: "Medications"    },

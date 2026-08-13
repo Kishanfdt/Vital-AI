@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SkeletonLines } from "./Spinner";
-import { BarChart2 } from "lucide-react";
+import { BarChart2, Activity, Pill, BookOpen } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -174,6 +174,95 @@ function TrendCard({ token }) {
   );
 }
 
+/* ── Mini Insights Widget (Overview condensed) ──────────────── */
+function MiniInsights({ token }) {
+  const navigate = useNavigate();
+  const [stats, setStats]     = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const h = { Authorization: `Bearer ${token}` };
+      try {
+        const [triageRes, medsRes, journalRes] = await Promise.all([
+          fetch(`${API_URL}/triage/history`, { headers: h }),
+          fetch(`${API_URL}/medications`,    { headers: h }),
+          fetch(`${API_URL}/journal`,        { headers: h }),
+        ]);
+        const [triage, meds, journal] = await Promise.all([
+          triageRes.ok  ? triageRes.json()  : [],
+          medsRes.ok    ? medsRes.json()    : [],
+          journalRes.ok ? journalRes.json() : [],
+        ]);
+        if (!cancelled) {
+          const now = new Date();
+          const ym  = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+          setStats({
+            triageCount:   triage.length,
+            medsCount:     meds.length,
+            journalMonth:  journal.filter(e => e.created_at?.startsWith(ym)).length,
+          });
+        }
+      } catch { /* silent — widget is non-critical */ }
+      finally { if (!cancelled) setLoading(false); }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [token]);
+
+  const mini = {
+    background: "#fff", border: "1px solid var(--line)",
+    borderRadius: "var(--radius-card)", padding: "18px 20px",
+    marginBottom: 20, boxShadow: "var(--shadow-sm)",
+  };
+
+  if (loading) return (
+    <div style={mini}>
+      <SkeletonLines lines={2} />
+    </div>
+  );
+
+  if (!stats) return null;
+
+  return (
+    <button style={{ ...mini, width: "100%", textAlign: "left", cursor: "pointer", transition: "box-shadow var(--duration-base) var(--ease-standard)" }}
+      onClick={() => navigate("/insights")}
+      aria-label="View full Insights & Analytics dashboard"
+      onMouseEnter={e => e.currentTarget.style.boxShadow = "var(--shadow-md)"}
+      onMouseLeave={e => e.currentTarget.style.boxShadow = "var(--shadow-sm)"}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <BarChart2 size={14} strokeWidth={2} style={{ color: "var(--teal-soft)" }} />
+          <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--teal-soft)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Insights at a Glance
+          </span>
+        </div>
+        <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--clay)" }}>View all →</span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
+        {[
+          { Icon: Activity, label: "Triage checks", value: stats.triageCount, sub: "last 90 days", color: "var(--deep-teal)" },
+          { Icon: Pill,     label: "Medications",   value: stats.medsCount,   sub: "active",       color: "#b8823a" },
+          { Icon: BookOpen, label: "Journal entries", value: stats.journalMonth, sub: "this month", color: "var(--success)" },
+        ].map(({ Icon, label, value, sub, color }) => (
+          <div key={label} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color }}>
+              <Icon size={14} strokeWidth={2} />
+            </div>
+            <div>
+              <div style={{ fontSize: 22, fontFamily: "var(--font-display)", fontWeight: 500, lineHeight: 1, color: "var(--ink)", marginBottom: 2 }}>{value}</div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--muted)", lineHeight: 1.3 }}>{label}</div>
+              <div style={{ fontSize: 10, color: "var(--muted)" }}>{sub}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </button>
+  );
+}
+
 /* ── Overview / Health Summary Hub ─────────────────────────── */
 export default function Overview({ userEmail, token }) {
   const navigate   = useNavigate();
@@ -208,16 +297,8 @@ export default function Overview({ userEmail, token }) {
       {/* ── Live Wellness Trend ── */}
       <TrendCard token={token} />
 
-      {/* ── Phase E Insights Placeholder ── */}
-      <div className="insights-placeholder" role="presentation">
-        <div className="insights-placeholder-icon">
-          <BarChart2 size={18} strokeWidth={1.5} />
-        </div>
-        <div>
-          <strong>Insights &amp; Analytics</strong>
-          <p>Deep health analytics and longitudinal trend visualisations — coming in Phase E.</p>
-        </div>
-      </div>
+      {/* ── Live Insights Mini-Widget ── */}
+      <MiniInsights token={token} />
 
       {/* ── Feature Grid ── */}
       <span className="section-label">Your tools</span>
