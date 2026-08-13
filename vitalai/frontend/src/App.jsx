@@ -4,6 +4,7 @@ import Login from "./components/Login";
 import TriagePanel from "./components/TriagePanel";
 import ChatPanel from "./components/ChatPanel";
 import MedicationsPanel from "./components/MedicationsPanel";
+import DocumentsPanel from "./components/DocumentsPanel";
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -54,11 +55,15 @@ export default function App() {
         <button className={`tab ${tab === "medications" ? "active" : ""}`} onClick={() => setTab("medications")}>
           Medications
         </button>
+        <button className={`tab ${tab === "documents" ? "active" : ""}`} onClick={() => setTab("documents")}>
+          Documents Q&A
+        </button>
       </div>
 
       {tab === "triage" && <TriagePanel token={token} />}
       {tab === "chat" && <ChatPanel token={token} />}
       {tab === "medications" && <MedicationsPanel token={token} />}
+      {tab === "documents" && <DocumentsPanel token={token} />}
     </div>
   );
 }

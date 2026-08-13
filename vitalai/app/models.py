@@ -55,3 +55,27 @@ class MedicationCheckResponse(BaseModel):
         "qualified healthcare professional or pharmacist for medical advice."
     )
 
+
+class DocumentUploadResponse(BaseModel):
+    file_path: str
+    filename: str
+    chunks_count: int
+    message: str
+
+
+class DocumentAskRequest(BaseModel):
+    question: str = Field(..., description="The user's question regarding their uploaded document(s)")
+
+
+class DocumentAskResponse(BaseModel):
+    answer: str
+    sources: list[str] = Field(default_factory=list, description="Top-k context chunks retrieved and used to generate answer")
+
+
+class DocumentItem(BaseModel):
+    file_path: str
+    filename: str
+    chunks_count: int
+    created_at: datetime | None = None
+
+

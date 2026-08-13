@@ -1,4 +1,4 @@
-﻿import os
+import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,6 +13,7 @@ class Settings:
 
     llm_model: str = "llama-3.3-70b-versatile"
     groq_base_url: str = "https://api.groq.com/openai/v1"
+    voyage_api_key: str = os.environ.get("VOYAGE_API_KEY", "")
 
 
 settings = Settings()
