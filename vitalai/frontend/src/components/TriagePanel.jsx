@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Spinner } from "./Spinner";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -54,8 +55,8 @@ export default function TriagePanel({ token }) {
   return (
     <div>
       <div className="card">
-        <h2>Check your symptoms</h2>
-        <p>Get a quick, cautious read on how urgently you should seek care.</p>
+        <h2>Symptom Check</h2>
+        <p>Describe what you're feeling and get a cautious urgency assessment with next steps.</p>
 
         <form onSubmit={handleSubmit}>
           <label htmlFor="symptoms">What's going on?</label>
@@ -67,23 +68,36 @@ export default function TriagePanel({ token }) {
             required
           />
 
-          <label htmlFor="age">Age (optional)</label>
-          <input id="age" type="number" value={age} onChange={(e) => setAge(e.target.value)} min="0" />
-
-          <label htmlFor="duration">How long has this been going on? (optional)</label>
+          <label htmlFor="triage-age">Age (optional)</label>
           <input
-            id="duration"
+            id="triage-age"
+            type="number"
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+            min="0"
+            placeholder="e.g. 35"
+          />
+
+          <label htmlFor="triage-duration">How long has this been going on? (optional)</label>
+          <input
+            id="triage-duration"
             type="text"
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
             placeholder="e.g. 2 days"
           />
 
-          {error && <p className="error-text">{error}</p>}
+          {error && <p className="error-text" role="alert">{error}</p>}
 
           <div className="row">
             <button className="btn-primary" type="submit" disabled={loading || !symptoms.trim()}>
-              {loading ? "Assessing…" : "Get assessment"}
+              {loading ? (
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Spinner size="sm" /> Assessing…
+                </span>
+              ) : (
+                "Get assessment"
+              )}
             </button>
           </div>
         </form>
@@ -97,9 +111,9 @@ export default function TriagePanel({ token }) {
           <h3 style={{ marginTop: 14 }}>Reasoning</h3>
           <p>{result.reasoning}</p>
           <h3>Recommended next steps</h3>
-          <ul>
+          <ul style={{ paddingLeft: 20, marginTop: 6 }}>
             {result.recommended_next_steps.map((step, i) => (
-              <li key={i}>{step}</li>
+              <li key={i} style={{ marginBottom: 4, lineHeight: 1.5 }}>{step}</li>
             ))}
           </ul>
           <p className="disclaimer">{result.disclaimer}</p>

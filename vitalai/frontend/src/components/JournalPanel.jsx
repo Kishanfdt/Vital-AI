@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import { Spinner, SkeletonLines } from "./Spinner";
+import { useToast } from "./Toast";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function JournalPanel({ token }) {
+  const toast = useToast();
   const [entries, setEntries] = useState([]);
   const [loadingEntries, setLoadingEntries] = useState(true);
   const [content, setContent] = useState("");
@@ -24,9 +27,7 @@ export default function JournalPanel({ token }) {
       const response = await fetch(`${API_URL}/journal`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!response.ok) {
-        throw new Error(`Failed to load journal entries (${response.status})`);
-      }
+      if (!response.ok) throw new Error(`Failed to load journal entries (${response.status})`);
       const data = await response.json();
       setEntries(data);
     } catch (err) {
@@ -59,6 +60,7 @@ export default function JournalPanel({ token }) {
 
       setContent("");
       await fetchEntries();
+      toast("Journal entry saved.", "success");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -83,6 +85,7 @@ export default function JournalPanel({ token }) {
 
       const data = await response.json();
       setTrendResult(data);
+      toast("Trend analysis ready.", "success");
     } catch (err) {
       setTrendError(err.message);
     } finally {
@@ -92,45 +95,60 @@ export default function JournalPanel({ token }) {
 
   return (
     <div>
-      {/* 1. Add Journal Entry Card */}
+      {/* Add Journal Entry */}
       <div className="card">
         <h2>Health & Wellness Journal</h2>
-        <p>Log how you are feeling physically and emotionally today. Embeddings help track health trends over time.</p>
+        <p>Log how you are feeling physically and emotionally. Entries are embedded for semantic trend analysis.</p>
 
-        <form onSubmit={handleAddEntry} style={{ marginBottom: 24 }}>
+        <form onSubmit={handleAddEntry}>
           <label htmlFor="journal-content">Today's Entry</label>
           <textarea
             id="journal-content"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="e.g., Felt energetic after morning walk. Had slight headache in afternoon after working on screen."
+            placeholder="e.g., Felt energetic after morning walk. Had slight headache in the afternoon after long screen time."
             required
           />
 
-          {error && <p className="error-text">{error}</p>}
+          {error && <p className="error-text" role="alert">{error}</p>}
 
           <div className="row">
             <button className="btn-primary" type="submit" disabled={adding || !content.trim()}>
-              {adding ? "Saving entry & embedding…" : "Save entry"}
+              {adding ? (
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Spinner size="sm" /> Saving…
+                </span>
+              ) : "Save entry"}
             </button>
             <button
               className="btn-ghost"
               type="button"
               onClick={handleFetchTrends}
               disabled={loadingTrends || entries.length === 0}
+              aria-label="View 30-day health journal trend analysis"
             >
-              {loadingTrends ? "Analyzing 30-day trends…" : "View 30-day trends"}
+              {loadingTrends ? (
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Spinner size="sm" /> Analyzing…
+                </span>
+              ) : "View 30-day trends"}
             </button>
           </div>
         </form>
 
-        <hr style={{ border: "none", borderTop: "1px solid var(--line)", margin: "20px 0" }} />
+        <hr style={{ border: "none", borderTop: "1px solid var(--line)", margin: "24px 0 20px" }} />
 
         <h3>Recent Journal History</h3>
+
         {loadingEntries ? (
-          <p style={{ color: "#8a938f", fontSize: 14 }}>Loading journal entries…</p>
+          <div style={{ marginTop: 12 }}>
+            <SkeletonLines lines={4} />
+          </div>
         ) : entries.length === 0 ? (
-          <p style={{ color: "#8a938f", fontSize: 14 }}>No journal entries recorded yet.</p>
+          <div className="empty-state">
+            <span className="empty-state-icon" aria-hidden="true">📓</span>
+            <p>No journal entries yet — write your first one above to start tracking your health over time.</p>
+          </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
             {entries.map((entry) => (
@@ -143,7 +161,7 @@ export default function JournalPanel({ token }) {
                   border: "1px solid var(--line)",
                 }}
               >
-                <div style={{ fontSize: 12, color: "#8a938f", marginBottom: 6 }}>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>
                   {new Date(entry.created_at).toLocaleDateString(undefined, {
                     weekday: "short",
                     year: "numeric",
@@ -153,32 +171,31 @@ export default function JournalPanel({ token }) {
                     minute: "2-digit",
                   })}
                 </div>
-                <div style={{ fontSize: 14, lineHeight: 1.5, color: "#3f4c48" }}>{entry.content}</div>
+                <div style={{ fontSize: 14, lineHeight: 1.55, color: "#3f4c48" }}>{entry.content}</div>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* 2. Trends Analysis Card */}
+      {/* Trend Error */}
       {trendError && (
         <div className="card">
-          <p className="error-text">{trendError}</p>
+          <p className="error-text" role="alert">{trendError}</p>
         </div>
       )}
 
+      {/* Trend Results */}
       {trendResult && (
         <div className="card">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <span className="urgency-badge urgency-self_care">
-              30-Day Trend Analysis ({trendResult.total_entries} {trendResult.total_entries === 1 ? "entry" : "entries"})
-            </span>
-          </div>
+          <span className="urgency-badge urgency-self_care">
+            30-Day Analysis · {trendResult.total_entries} {trendResult.total_entries === 1 ? "entry" : "entries"}
+          </span>
 
           {trendResult.detected_clusters && trendResult.detected_clusters.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              <strong style={{ fontSize: 13, color: "var(--deep-teal)", display: "block", marginBottom: 6 }}>
-                Identified Health & Mood Clusters:
+            <div style={{ marginTop: 16, marginBottom: 8 }}>
+              <strong style={{ fontSize: 13, color: "var(--deep-teal)", display: "block", marginBottom: 8 }}>
+                Detected Health & Mood Clusters:
               </strong>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {trendResult.detected_clusters.map((cluster, i) => (
@@ -187,7 +204,7 @@ export default function JournalPanel({ token }) {
                     style={{
                       background: "var(--paper)",
                       border: "1px solid var(--line)",
-                      borderRadius: 16,
+                      borderRadius: 999,
                       padding: "4px 12px",
                       fontSize: 12,
                       fontWeight: 600,
@@ -201,7 +218,7 @@ export default function JournalPanel({ token }) {
             </div>
           )}
 
-          <h3>Wellness & Symptom Pattern Summary</h3>
+          <h3 style={{ marginTop: 16 }}>Wellness & Symptom Pattern Summary</h3>
           <div style={{ whiteSpace: "pre-line", lineHeight: 1.6, color: "#3f4c48" }}>
             {trendResult.trend_summary}
           </div>
@@ -212,4 +229,3 @@ export default function JournalPanel({ token }) {
     </div>
   );
 }
-
