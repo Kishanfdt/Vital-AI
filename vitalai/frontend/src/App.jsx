@@ -73,7 +73,7 @@ function AuthenticatedApp({ session }) {
       <main className="main-content" id="main-content">
         <div className="main-content-inner">
           <Routes>
-            <Route path="/" element={<Overview userEmail={userEmail} />} />
+            <Route path="/" element={<Overview userEmail={userEmail} token={token} />} />
             <Route path="/triage" element={<TriagePanel token={token} />} />
             <Route path="/chat" element={<ChatPanel token={token} />} />
             <Route path="/medications" element={<MedicationsPanel token={token} />} />
