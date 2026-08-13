@@ -1,6 +1,6 @@
 # 🩺 VitalAI - Next-Generation AI Health & Wellness Platform
 
-VitalAI is an intelligent, multi-featured health and wellness web application powered by **FastAPI**, **Anthropic Claude AI**, **Supabase (PostgreSQL + pgvector)**, and **React + Vite**. It provides automated symptom triage with structured JSON outputs, streaming AI wellness coaching, semantic health journaling, medication interaction checking, and RAG-based medical document Q&A.
+VitalAI is an intelligent, multi-featured health and wellness web application powered by **FastAPI**, **Groq AI (Llama 3.3 70B)**, **Voyage AI**, **Supabase (PostgreSQL + pgvector)**, and **React + Vite**. It provides automated symptom triage with structured JSON outputs, streaming AI wellness coaching, semantic health journaling, medication interaction checking, and RAG-based medical document Q&A.
 
 ---
 
@@ -8,8 +8,8 @@ VitalAI is an intelligent, multi-featured health and wellness web application po
 
 - **🚨 AI Symptom Triage**: Fast, structured analysis of patient symptoms with urgency assessment (Emergency, Urgent, Routine, Self-Care) and tool-forced JSON formatting.
 - **💬 Streaming AI Wellness Coach**: Real-time conversational interface streaming guidance via Server-Sent Events (SSE) with persistent user context memory.
-- **📓 Health Journaling & Semantic Trends**: Track daily health logs and analyze long-term health trends using vector embeddings and Supabase pgvector.
-- **💊 Medication Interaction Checker**: Intelligent tool-calling engine evaluating drug-drug interactions and potential side effects.
+- **📓 Health Journaling & Semantic Trends**: Track daily health logs and analyze long-term health trends using vector embeddings, k-means clustering, and Supabase pgvector.
+- **💊 Medication Interaction Checker**: Intelligent tool-calling engine evaluating drug-drug interactions and potential side effects via OpenFDA.
 - **📚 Medical Document RAG (Retrieval-Augmented Generation)**: Vector similarity search and document Q&A for clinical guides and personal health records.
 - **🔐 Secure Authentication**: Integrated Supabase JWT authentication across all endpoints and client interfaces.
 
@@ -21,7 +21,7 @@ VitalAI is an intelligent, multi-featured health and wellness web application po
 | :--- | :--- |
 | **Frontend** | React 18, Vite, Tailwind CSS, Lucide Icons, Supabase JS Client |
 | **Backend** | Python 3.10+, FastAPI, Uvicorn, Pydantic v2 |
-| **AI / LLM** | Anthropic Claude API (`claude-3-5-sonnet`), Tool Calling, SSE Streaming |
+| **AI / LLM** | Groq API (`llama-3.3-70b-versatile`), Voyage AI (`voyage-3`), Tool Calling, SSE Streaming |
 | **Database & Vector** | Supabase (PostgreSQL), `pgvector` Extension, Row Level Security (RLS) |
 
 ---
@@ -44,11 +44,11 @@ Vital-AI/
 │   │   │   ├── medications.py  # Medication interaction checker
 │   │   │   └── documents.py    # RAG document Q&A router
 │   │   └── services/           # Service Integrations
-│   │       └── llm.py          # Anthropic Claude API client & prompts
+│   │       └── llm.py          # Groq API client & prompts
 │   │
 │   ├── frontend/               # React + Vite Frontend App
 │   │   ├── src/
-│   │   │   ├── components/     # UI Components (TriagePanel, ChatPanel, Login)
+│   │   │   ├── components/     # UI Components (TriagePanel, ChatPanel, MedicationsPanel, DocumentsPanel, JournalPanel, Login)
 │   │   │   ├── App.jsx         # Main application layout & state management
 │   │   │   ├── main.jsx        # React root renderer
 │   │   │   └── supabaseClient.js # Supabase client initialization
@@ -70,7 +70,8 @@ Vital-AI/
 - **Python 3.10+**
 - **Node.js 18+** & `npm`
 - **Supabase Account** ([supabase.com](https://supabase.com))
-- **Anthropic API Key** ([console.anthropic.com](https://console.anthropic.com))
+- **Groq API Key** ([console.groq.com](https://console.groq.com))
+- **Voyage AI API Key** ([console.voyageai.com](https://console.voyageai.com))
 
 ---
 
@@ -107,7 +108,8 @@ Vital-AI/
 
 4. Create a `.env` file inside `vitalai/`:
    ```env
-   ANTHROPIC_API_KEY=your_anthropic_api_key_here
+   GROQ_API_KEY=your_groq_api_key_here
+   VOYAGE_API_KEY=your_voyage_api_key_here
    SUPABASE_URL=https://your-project.supabase.co
    SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
    SUPABASE_JWT_SECRET=your_supabase_jwt_secret
@@ -157,7 +159,6 @@ Vital-AI/
 | `GET` | `/journal/trends` | Generates semantic trend analysis & k-means clusters across journal history | ✅ Active |
 | `POST` | `/medications` | Checks drug-drug interactions & precautions via OpenFDA tool calling | ✅ Active |
 | `POST` | `/documents` | Queries medical knowledge base via Voyage AI & Supabase RAG | ✅ Active |
-
 
 ---
 

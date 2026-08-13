@@ -1,6 +1,6 @@
 # VitalAI
 
-A multi-featured LLM-powered health & wellness API built with FastAPI, Claude, and Supabase.
+A multi-featured LLM-powered health & wellness API built with FastAPI, Groq (Llama 3.3 70B), Voyage AI, and Supabase.
 
 ## Status
 
@@ -17,11 +17,11 @@ Each router is fully implemented and operational.
 
 ## Setup
 
-
 1. **Create a Supabase project** at supabase.com.
 2. **Run `schema.sql`** in the Supabase SQL editor to create tables, enable pgvector, and set up RLS.
 3. **Copy `.env.example` to `.env`** and fill in:
-   - `ANTHROPIC_API_KEY` - from console.anthropic.com
+   - `GROQ_API_KEY` - from console.groq.com
+   - `VOYAGE_API_KEY` - from console.voyageai.com (for document RAG & journal embeddings)
    - `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` - Project Settings -> API
    - `SUPABASE_JWT_SECRET` - Project Settings -> API -> JWT Settings
 4. **Install dependencies:**
@@ -68,9 +68,6 @@ This project is intentionally sequenced so each milestone teaches a distinct LLM
 3. ✅ **RAG** (`/documents`) - chunking, embeddings, vector similarity search
 4. ✅ **Embeddings for analysis** (`/journal/trends`) - semantic trend detection over time
 5. ✅ **Streaming + memory** (`/chat`) - SSE-style responses, conversation state
-
-
-Work through them in order - each one builds on patterns from the last.
 
 ## Important safety note
 
