@@ -4,6 +4,15 @@ VitalAI is a full-stack health and wellness web application built with **FastAPI
 
 ---
 
+## 🌐 Live Deployment
+
+- **Live Web App**: [https://vital-hotwmqtc3-kishanfdts-projects.vercel.app/](https://vital-hotwmqtc3-kishanfdts-projects.vercel.app/)
+- **Backend API**: [https://vital-ai-nnnm.onrender.com](https://vital-ai-nnnm.onrender.com)
+- **Deployment Note**: The frontend is deployed on **Vercel** and the backend API is hosted on **Render** (free tier — please allow 30–60 seconds for the backend instance to spin up on initial request after inactivity).
+- **Architecture**: `React (Vercel) -> FastAPI (Render) -> Supabase (Postgres + Auth) + Groq (Llama 3.3) + Voyage AI embeddings`
+
+---
+
 ## ✅ Feature Status
 
 | # | Feature | Endpoints | LLM Skill | Status |
@@ -79,7 +88,11 @@ Vital-AI/
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Getting Started (Local Development)
+
+> 💡 **Try it Live**: If you just want to try out VitalAI without running it locally, visit the [Live Web App](https://vital-hotwmqtc3-kishanfdts-projects.vercel.app/).
+>
+> The instructions below cover setting up and running VitalAI locally for development.
 
 ### Prerequisites
 
