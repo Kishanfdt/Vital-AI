@@ -10,10 +10,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "https://vital-ai-phi.vercel.app/",
-    ],
+    allow_origins=["http://localhost:5173"],
+    allow_origin_regex=r"https://vital-ai.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
