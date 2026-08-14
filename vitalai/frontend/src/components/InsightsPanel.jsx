@@ -6,7 +6,8 @@ import {
   ResponsiveContainer, Legend,
 } from "recharts";
 import { SkeletonLines } from "./Spinner";
-import { TrendingUp, Pill, BookOpen, Activity } from "lucide-react";
+import { useToast } from "./Toast";
+import { TrendingUp, Pill, BookOpen, Activity, Sparkles, RefreshCw, Layers } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -180,6 +181,180 @@ function ClusterCloud({ clusters }) {
   );
 }
 
+/* ── Proactive AI Agent Section ─────────────────────────── */
+function ProactiveAgentSection({ token }) {
+  const toast = useToast();
+  const [data, setData]             = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError]           = useState("");
+
+  const fetchInsights = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    setError("");
+
+    try {
+      const url = isRefresh
+        ? `${API_URL}/agent/insights/refresh`
+        : `${API_URL}/agent/insights`;
+      const method = isRefresh ? "POST" : "GET";
+      const res = await fetch(url, {
+        method,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch agent insights");
+      const json = await res.json();
+      setData(json);
+      if (isRefresh) {
+        toast("Agent insights refreshed!", "success");
+      }
+    } catch (e) {
+      setError("Unable to load proactive agent insights right now.");
+      if (isRefresh) toast("Failed to refresh agent insights.", "error");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInsights();
+  }, [token]);
+
+  const getTypeBadge = (type) => {
+    const config = {
+      pattern:     { bg: "#eef2ff", color: "#3730a3", border: "#c7d2fe", label: "Pattern" },
+      trend:       { bg: "#ecfdf5", color: "#065f46", border: "#a7f3d0", label: "Trend" },
+      correlation: { bg: "#fffbeb", color: "#92400e", border: "#fde68a", label: "Correlation" },
+      note:        { bg: "#f0f9ff", color: "#075985", border: "#bae6fd", label: "Observation" },
+      no_pattern:  { bg: "#f3f4f6", color: "#4b5563", border: "#e5e7eb", label: "Baseline" },
+    };
+    return config[type] || config.note;
+  };
+
+  const getConfidenceBadge = (conf) => {
+    const config = {
+      high:   { bg: "var(--deep-teal)", color: "#ffffff", label: "High Confidence" },
+      medium: { bg: "var(--paper)", color: "var(--deep-teal)", label: "Medium Confidence" },
+      low:    { bg: "#f5f5f5", color: "#666666", label: "Low Confidence" },
+    };
+    return config[conf] || config.medium;
+  };
+
+  return (
+    <div className="card" style={{ marginBottom: 28, background: "linear-gradient(180deg, #ffffff 0%, #f9fbfb 100%)", border: "1px solid var(--line)" }}>
+      {/* Card Top Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--deep-teal)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Sparkles size={18} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: "var(--text-base)", fontWeight: 700, color: "var(--deep-teal)", margin: 0, fontFamily: "var(--font-display)" }}>
+              Proactive AI Health Agent
+            </h3>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--muted)", margin: 0 }}>
+              Autonomous multi-tool analysis across Triage, Journal &amp; Medications (60-day window)
+            </p>
+          </div>
+        </div>
+
+        <button
+          className="btn-secondary"
+          onClick={() => fetchInsights(true)}
+          disabled={loading || refreshing}
+          style={{ fontSize: "var(--text-xs)", padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: 6 }}
+        >
+          <RefreshCw size={13} style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }} />
+          {refreshing ? "Analysing..." : "Refresh Agent"}
+        </button>
+      </div>
+
+      {loading ? (
+        <SkeletonLines lines={4} />
+      ) : error ? (
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--error)", margin: 0 }}>{error}</p>
+      ) : (
+        <>
+          {/* Metadata bar */}
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, padding: "10px 14px", background: "var(--paper)", borderRadius: "var(--radius-sm)", marginBottom: 18, border: "1px solid var(--line)", fontSize: "var(--text-xs)" }}>
+            <span style={{ fontWeight: 600, color: "var(--ink)" }}>📊 Data Analyzed:</span>
+            <span style={{ color: "var(--muted)" }}>{data?.data_summary || "No summary available"}</span>
+            <div style={{ flexGrow: 1 }} />
+            {data?.tools_called?.length > 0 && (
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <span style={{ color: "var(--muted)", marginRight: 2 }}>Tools used:</span>
+                {data.tools_called.map((tool) => (
+                  <span key={tool} style={{ background: "#fff", border: "1px solid var(--line)", padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600, color: "var(--deep-teal)" }}>
+                    {tool.replace("get_", "").replace(/_/g, " ")}
+                  </span>
+                ))}
+              </div>
+            )}
+            <span style={{ color: "var(--muted)", fontSize: 11, marginLeft: 6 }}>
+              {data?.cached ? "⚡ Cached 24h" : "✨ Live Analysis"}
+            </span>
+          </div>
+
+          {/* Insights Grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 }}>
+            {data?.insights?.map((item, idx) => {
+              const tb = getTypeBadge(item.type);
+              const cb = getConfidenceBadge(item.confidence);
+              return (
+                <div
+                  key={idx}
+                  style={{
+                    background: "#fff",
+                    border: `1px solid ${tb.border}`,
+                    borderRadius: "var(--radius-card)",
+                    padding: 16,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    boxShadow: "var(--shadow-sm)",
+                  }}
+                >
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
+                      <span style={{ background: tb.bg, color: tb.color, border: `1px solid ${tb.border}`, padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 700 }}>
+                        {tb.label}
+                      </span>
+                      <span style={{ background: cb.bg, color: cb.color, padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>
+                        {cb.label}
+                      </span>
+                    </div>
+
+                    <h4 style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--ink)", margin: "0 0 6px 0", lineHeight: 1.3 }}>
+                      {item.headline}
+                    </h4>
+
+                    <p style={{ fontSize: "var(--text-xs)", color: "#3f4c48", margin: "0 0 12px 0", lineHeight: 1.5 }}>
+                      {item.detail}
+                    </p>
+                  </div>
+
+                  {item.sources?.length > 0 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, paddingTop: 10, borderTop: "1px dashed var(--line)", marginTop: "auto" }}>
+                      <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 500 }}>Sources:</span>
+                      {item.sources.map((src) => (
+                        <span key={src} style={{ background: "var(--paper)", border: "1px solid var(--line)", padding: "1px 6px", borderRadius: 4, fontSize: 10, color: "var(--muted)", textTransform: "capitalize" }}>
+                          {src}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ── Main InsightsPanel ──────────────────────────────────── */
 export default function InsightsPanel({ token }) {
   const navigate = useNavigate();
@@ -261,6 +436,9 @@ export default function InsightsPanel({ token }) {
         <h1>Insights &amp; Analytics</h1>
         <p>Your personal health story, visualised across all tools.</p>
       </div>
+
+      {/* ── Proactive AI Health Agent Section ── */}
+      <ProactiveAgentSection token={token} />
 
       {/* ── Summary stat cards ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 14, marginBottom: 28 }}>

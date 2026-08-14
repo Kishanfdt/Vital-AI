@@ -61,6 +61,26 @@
   --radius-xs:   6px;
 }
 
+/* ─── Dark Theme Tokens ──────────────────────────────────────── */
+[data-theme="dark"] {
+  --ink:        #e6ece9;
+  --paper:      #121a18;
+  --deep-teal:  #34a59a;
+  --teal-soft:  #7fb8ae;
+  --teal-mid:   #257a74;
+  --sage:       #4c7a68;
+  --sage-light: #264239;
+  --clay:       #e08869;
+  --line:       #293b36;
+  --line-light: #1f2e2a;
+  --white:      #1a2624;
+  --muted:      #9cb0a8;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
 /* ─── Reset ─────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 

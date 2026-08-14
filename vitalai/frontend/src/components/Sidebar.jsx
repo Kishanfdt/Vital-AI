@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutGrid,
@@ -8,7 +9,10 @@ import {
   Pill,
   FileText,
   BookOpen,
+  Users,
   LogOut,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
@@ -16,6 +20,7 @@ const NAV_ITEMS = [
   { to: "/",             Icon: LayoutGrid,    label: "Overview"       },
   { to: "/insights",     Icon: BarChart2,     label: "Insights"       },
   { to: "/appointments", Icon: CalendarDays,  label: "Appointments"   },
+  { to: "/care-circle",  Icon: Users,         label: "Care Circle"    },
   { to: "/triage",       Icon: Activity,      label: "Symptom Check"  },
   { to: "/chat",         Icon: MessageCircle, label: "Coach Chat"     },
   { to: "/medications",  Icon: Pill,          label: "Medications"    },
@@ -25,6 +30,14 @@ const NAV_ITEMS = [
 
 function NavList({ onNavigate, userEmail }) {
   const navigate = useNavigate();
+  const [theme, setTheme] = useState(() => localStorage.getItem("vitalai_theme") || "light");
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("vitalai_theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((prev) => (prev === "light" ? "dark" : "light"));
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -57,7 +70,28 @@ function NavList({ onNavigate, userEmail }) {
       </nav>
 
       <div className="sidebar-footer">
-        <span className="sidebar-user-email" title={userEmail}>{userEmail}</span>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, width: "100%" }}>
+          <span className="sidebar-user-email" title={userEmail} style={{ margin: 0 }}>{userEmail}</span>
+          <button
+            onClick={toggleTheme}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "var(--muted)",
+              cursor: "pointer",
+              padding: 4,
+              borderRadius: 4,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+            aria-label="Toggle dark mode"
+          >
+            {theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
+          </button>
+        </div>
+
         <button
           className="sidebar-signout"
           onClick={handleSignOut}

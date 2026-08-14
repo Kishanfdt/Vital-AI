@@ -2,21 +2,82 @@ import { useEffect, useState } from "react";
 import { Spinner, SkeletonLines } from "./Spinner";
 import { useToast } from "./Toast";
 import { EmptyState, EmptyJournal } from "./EmptyState";
+import { Mic, MicOff } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function JournalPanel({ token }) {
   const toast = useToast();
-  const [entries, setEntries]             = useState([]);
+  const [entries, setEntries]               = useState([]);
   const [loadingEntries, setLoadingEntries] = useState(true);
-  const [content, setContent]             = useState("");
-  const [adding, setAdding]               = useState(false);
-  const [error, setError]                 = useState("");
-  const [loadingTrends, setLoadingTrends] = useState(false);
-  const [trendResult, setTrendResult]     = useState(null);
-  const [trendError, setTrendError]       = useState("");
+  const [content, setContent]               = useState("");
+  const [adding, setAdding]                 = useState(false);
+  const [error, setError]                   = useState("");
+  const [loadingTrends, setLoadingTrends]   = useState(false);
+  const [trendResult, setTrendResult]       = useState(null);
+  const [trendError, setTrendError]         = useState("");
 
-  useEffect(() => { fetchEntries(); }, [token]);
+  /* Voice input state */
+  const [isListening, setIsListening]       = useState(false);
+  const [recognition, setRecognition]       = useState(null);
+  const [speechSupported, setSpeechSupported] = useState(true);
+
+  useEffect(() => {
+    fetchEntries();
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = "en-US";
+
+      rec.onresult = (event) => {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript) {
+          setContent((prev) => (prev ? `${prev.trim()} ${transcript}` : transcript));
+        }
+      };
+
+      rec.onerror = (err) => {
+        console.error("Speech recognition error:", err);
+        setIsListening(false);
+        toast("Voice dictation error. Please try typing.", "error");
+      };
+
+      rec.onend = () => {
+        setIsListening(false);
+      };
+
+      setRecognition(rec);
+    } else {
+      setSpeechSupported(false);
+    }
+  }, [token]);
+
+  const toggleListening = () => {
+    if (!speechSupported || !recognition) {
+      toast("Speech recognition is not supported in this browser (Use Chrome or Edge).", "info");
+      return;
+    }
+
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+      toast("Voice dictation stopped.", "info");
+    } else {
+      try {
+        recognition.start();
+        setIsListening(true);
+        toast("Listening... Speak your journal entry.", "info");
+      } catch (e) {
+        console.error("Failed to start speech recognition:", e);
+      }
+    }
+  };
 
   async function fetchEntries() {
     setLoadingEntries(true);
@@ -38,6 +99,10 @@ export default function JournalPanel({ token }) {
   async function handleAddEntry(e) {
     e.preventDefault();
     if (!content.trim()) return;
+    if (isListening && recognition) {
+      recognition.stop();
+      setIsListening(false);
+    }
     setAdding(true);
     setError("");
     try {
@@ -92,7 +157,37 @@ export default function JournalPanel({ token }) {
         </p>
 
         <form onSubmit={handleAddEntry}>
-          <label htmlFor="journal-content">Today's Entry</label>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <label htmlFor="journal-content" style={{ margin: 0 }}>Today's Entry</label>
+            
+            {/* Voice Dictation Button */}
+            <button
+              type="button"
+              onClick={toggleListening}
+              className="btn-ghost"
+              style={{
+                fontSize: "var(--text-xs)",
+                padding: "4px 10px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                color: isListening ? "var(--clay)" : "var(--deep-teal)",
+                border: `1px solid ${isListening ? "var(--clay)" : "var(--line)"}`,
+                background: isListening ? "rgba(199, 111, 79, 0.1)" : "transparent",
+              }}
+              title={speechSupported ? "Speak your journal entry" : "Voice dictation unsupported in this browser"}
+            >
+              {isListening ? <MicOff size={14} className="spin" /> : <Mic size={14} />}
+              {isListening ? "Stop Dictation" : "Voice Input"}
+            </button>
+          </div>
+
+          {!speechSupported && (
+            <p style={{ fontSize: 11, color: "var(--muted)", margin: "0 0 8px 0" }}>
+              💡 Voice dictation relies on Web Speech API (supported in Chrome/Edge).
+            </p>
+          )}
+
           <textarea
             id="journal-content"
             value={content}
@@ -103,7 +198,7 @@ export default function JournalPanel({ token }) {
 
           {error && <p className="error-text" role="alert">{error}</p>}
 
-          <div className="row">
+          <div className="row" style={{ marginTop: 14 }}>
             <button className="btn-primary" type="submit" disabled={adding || !content.trim()}>
               {adding ? (
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>

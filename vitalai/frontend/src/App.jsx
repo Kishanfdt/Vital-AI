@@ -19,6 +19,7 @@ import ChatPanel from "./components/ChatPanel";
 import MedicationsPanel from "./components/MedicationsPanel";
 import DocumentsPanel from "./components/DocumentsPanel";
 import JournalPanel from "./components/JournalPanel";
+import CareCirclePanel from "./components/CareCirclePanel";
 
 /* ── Animated route container (re-mounts on pathname change) ── */
 function AnimatedRoutes({ token, userEmail }) {
@@ -30,6 +31,7 @@ function AnimatedRoutes({ token, userEmail }) {
         <Route path="/"             element={<Overview          userEmail={userEmail} token={token} />} />
         <Route path="/insights"     element={<InsightsPanel     token={token} />} />
         <Route path="/appointments" element={<AppointmentsPanel token={token} />} />
+        <Route path="/care-circle"  element={<CareCirclePanel   token={token} userEmail={userEmail} />} />
         <Route path="/triage"       element={<TriagePanel       token={token} />} />
         <Route path="/chat"         element={<ChatPanel         token={token} />} />
         <Route path="/medications"  element={<MedicationsPanel  token={token} />} />

@@ -13,8 +13,12 @@ VitalAI is a full-stack health and wellness web application built with **FastAPI
 | 3 | **Medical Document Q&A** | `POST /documents/upload`, `POST /documents/ask`, `GET /documents` | RAG (Voyage AI + pgvector) | ✅ Complete |
 | 4 | **Health Journal & Trend Analysis** | `POST/GET /journal`, `GET /journal/trends` | Embeddings + k-means clustering | ✅ Complete |
 | 5 | **Streaming Wellness Coach** | `POST /chat` | Streaming SSE + conversation memory | ✅ Complete |
+| 6 | **Care Coordination & PDF Summary** | `GET/POST/PUT/DELETE /appointments`, `POST /appointments/summary-pdf` | fpdf2 PDF compilation + structured summary | ✅ Complete |
+| 7 | **Proactive AI Health Agent** | `GET /agent/insights`, `POST /agent/insights/refresh` | Unforced multi-tool agentic loop | ✅ Complete |
+| 8 | **Caregiver / Family Sharing** | `POST /care-circle/invite`, `GET /care-circle`, `POST /accept`, `POST /revoke`, `GET /{id}/summary` | Database Postgres RLS multi-user security | ✅ Complete |
+| 9 | **Platform Polish & Data Export** | `GET /export/all` | Dark Mode, Voice Input, Data Ownership export | ✅ Complete |
 
-**UI:** Sidebar + React Router layout with Overview dashboard, mobile-responsive drawer, toast notifications, and loading states.
+**UI:** Sidebar + React Router layout with Overview dashboard, Dark Mode, Voice Input, mobile-responsive drawer, toast notifications, recharts visualization, Caregiver view, and PDF generation.
 
 ---
 
@@ -170,6 +174,10 @@ npm run dev
 | `POST` | `/documents/upload` | Upload PDF, extract text, chunk, embed, store |
 | `POST` | `/documents/ask` | RAG Q&A grounded in uploaded documents |
 | `GET` | `/documents` | List uploaded documents |
+| `GET/POST` | `/appointments` | Manage appointments timeline and clinical prep notes |
+| `POST` | `/appointments/summary-pdf` | Generate comprehensive Doctor Visit PDF summary |
+| `GET` | `/agent/insights` | Get 60-day proactive multi-tool AI health insights (24h cached) |
+| `POST` | `/agent/insights/refresh` | Force re-run multi-tool agentic loop to refresh insights |
 
 All endpoints require `Authorization: Bearer <supabase-jwt>`. User identity is always sourced from the token — never from the request body.
 
@@ -192,6 +200,8 @@ All endpoints require `Authorization: Bearer <supabase-jwt>`. User identity is a
 | 3 | **RAG** | `/documents/upload` chunks PDFs, embeds with Voyage AI, stores in pgvector; `/ask` retrieves top-k chunks as LLM context |
 | 4 | **Embeddings over time** | `/journal` stores an embedding per entry; `/trends` runs k-means (k=3) to detect topic clusters before summarising |
 | 5 | **Streaming** | `/chat` returns a `StreamingResponse`, streamed token-by-token to the React frontend |
+| 6 | **Document Synthesis & PDF** | `/appointments/summary-pdf` compiles triage history, meds, journal trends into clinical PDF via fpdf2 |
+| 7 | **Proactive Agentic Loop** | `/agent/insights` runs unforced multi-tool calling across triage, journal, and meds with 24h caching |
 
 ---
 
