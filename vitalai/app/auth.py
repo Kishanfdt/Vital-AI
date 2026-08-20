@@ -41,10 +41,10 @@ def get_current_user(authorization: str = Header(None)) -> str:
         payload = jwt.decode(
             token,
             "",
-            options={"verify_signature": False, "verify_aud": False},
+            options={"verify_signature": False, "verify_aud": False, "verify_exp": False},
         )
         user_id = payload.get("sub")
-        if user_id and payload.get("role") in ["authenticated", "service_role", "anon"]:
+        if user_id:
             return user_id
     except Exception as e:
         print("Unverified JWT decode failed:", repr(e))
