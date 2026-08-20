@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Spinner, SkeletonLines } from "./Spinner";
 import { useToast } from "./Toast";
 import { EmptyState, EmptyJournal } from "./EmptyState";
-import { Mic, MicOff } from "lucide-react";
+import { Mic, MicOff, BookOpen, Sparkles, Tag } from "lucide-react";
+import { formatRelativeTime, formatClinicalTimestamp } from "../utils/formatters";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -16,6 +17,7 @@ export default function JournalPanel({ token }) {
   const [loadingTrends, setLoadingTrends]   = useState(false);
   const [trendResult, setTrendResult]       = useState(null);
   const [trendError, setTrendError]         = useState("");
+  const [trendTime, setTrendTime]           = useState(null);
 
   /* Voice input state */
   const [isListening, setIsListening]       = useState(false);
@@ -117,7 +119,7 @@ export default function JournalPanel({ token }) {
       }
       setContent("");
       await fetchEntries();
-      toast("Journal entry saved.", "success");
+      toast("Journal entry logged to health record.", "success");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -139,7 +141,8 @@ export default function JournalPanel({ token }) {
       }
       const data = await response.json();
       setTrendResult(data);
-      toast("Trend analysis ready.", "success");
+      setTrendTime(new Date().toISOString());
+      toast("30-day health trend synthesis complete.", "success");
     } catch (err) {
       setTrendError(err.message);
     } finally {
@@ -149,50 +152,50 @@ export default function JournalPanel({ token }) {
 
   return (
     <div className="page-content">
-      {/* Entry Form + History */}
-      <div className="card">
-        <h2>Health &amp; Wellness Journal</h2>
-        <p style={{ marginBottom: 20 }}>
-          Log how you are feeling physically and emotionally. Entries are embedded for semantic trend analysis.
+      {/* ── Page Header ── */}
+      <div style={{ marginBottom: 20 }}>
+        <span className="section-label">Patient Health Log</span>
+        <h1>Health &amp; Symptom Journal</h1>
+        <p style={{ margin: 0, color: "var(--muted)" }}>
+          Structured longitudinal logging of physical and emotional symptoms for trend analysis.
         </p>
+      </div>
+
+      {/* ── Entry Form + Clinical History ── */}
+      <div className="card">
+        <span className="card-section-label">Log Clinical Note</span>
 
         <form onSubmit={handleAddEntry}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-            <label htmlFor="journal-content" style={{ margin: 0 }}>Today's Entry</label>
-            
+            <label htmlFor="journal-content" style={{ margin: 0 }}>Today's Observation *</label>
+
             {/* Voice Dictation Button */}
             <button
               type="button"
               onClick={toggleListening}
               className="btn-ghost"
               style={{
-                fontSize: "var(--text-xs)",
-                padding: "4px 10px",
+                fontSize: 11,
+                padding: "3px 8px",
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 6,
-                color: isListening ? "var(--clay)" : "var(--deep-teal)",
-                border: `1px solid ${isListening ? "var(--clay)" : "var(--line)"}`,
-                background: isListening ? "rgba(199, 111, 79, 0.1)" : "transparent",
+                gap: 5,
+                color: isListening ? "var(--danger)" : "var(--deep-teal)",
+                border: `1px solid ${isListening ? "var(--danger-border)" : "var(--line)"}`,
+                background: isListening ? "var(--danger-bg)" : "transparent",
               }}
               title={speechSupported ? "Speak your journal entry" : "Voice dictation unsupported in this browser"}
             >
-              {isListening ? <MicOff size={14} className="spin" /> : <Mic size={14} />}
+              {isListening ? <MicOff size={13} /> : <Mic size={13} />}
               {isListening ? "Stop Dictation" : "Voice Input"}
             </button>
           </div>
-
-          {!speechSupported && (
-            <p style={{ fontSize: 11, color: "var(--muted)", margin: "0 0 8px 0" }}>
-              💡 Voice dictation relies on Web Speech API (supported in Chrome/Edge).
-            </p>
-          )}
 
           <textarea
             id="journal-content"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="e.g., Felt energetic after morning walk. Had slight headache in the afternoon after long screen time."
+            placeholder="Log physical feelings, sleep quality, stress levels, or symptom changes (e.g. Mild tension headache after screen work, energetic morning walk)."
             required
           />
 
@@ -202,9 +205,13 @@ export default function JournalPanel({ token }) {
             <button className="btn-primary" type="submit" disabled={adding || !content.trim()}>
               {adding ? (
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Spinner size="sm" /> Saving…
+                  <Spinner size="sm" /> Logging Entry…
                 </span>
-              ) : "Save entry"}
+              ) : (
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <BookOpen size={15} /> Save Log Entry
+                </span>
+              )}
             </button>
             <button
               className="btn-ghost"
@@ -212,51 +219,58 @@ export default function JournalPanel({ token }) {
               onClick={handleFetchTrends}
               disabled={loadingTrends || entries.length === 0}
               aria-label="View 30-day health journal trend analysis"
+              style={{ display: "flex", alignItems: "center", gap: 6 }}
             >
               {loadingTrends ? (
-                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Spinner size="sm" /> Analyzing…
-                </span>
-              ) : "View 30-day trends"}
+                <>
+                  <Spinner size="sm" /> Synthesizing Trends…
+                </>
+              ) : (
+                <>
+                  <Sparkles size={14} /> Analyze 30-Day Trends
+                </>
+              )}
             </button>
           </div>
         </form>
 
         <hr className="divider" />
 
-        <h3 style={{ marginBottom: 14 }}>Recent Journal History</h3>
+        {/* ── Health Log List (Date-First EHR Format) ── */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <span className="card-section-label" style={{ margin: 0 }}>Longitudinal Health Log</span>
+          <span className="timestamp-text">{entries.length} Entries Recorded</span>
+        </div>
 
         {loadingEntries ? (
-          <div style={{ marginTop: 12 }}><SkeletonLines lines={4} /></div>
+          <SkeletonLines lines={4} />
         ) : entries.length === 0 ? (
           <EmptyState
             illustration={EmptyJournal}
-            message="No journal entries yet — write your first one above to start tracking your health over time."
+            message="No journal logs recorded in patient chart yet. Write your first entry above."
           />
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
-            {entries.map((entry) => (
-              <div
-                key={entry.id}
-                style={{
-                  padding: "12px 14px",
-                  background: "var(--paper)",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--line)",
-                  transition: "box-shadow var(--duration-fast) var(--ease-standard)",
-                }}
-              >
-                <div style={{ fontSize: "var(--text-xs)", color: "var(--muted)", marginBottom: 6, fontWeight: 500 }}>
-                  {new Date(entry.created_at).toLocaleDateString(undefined, {
-                    weekday: "short", year: "numeric", month: "short", day: "numeric",
-                    hour: "2-digit", minute: "2-digit",
-                  })}
-                </div>
-                <div style={{ fontSize: "var(--text-sm)", lineHeight: "var(--lh-normal)", color: "#3f4c48" }}>
-                  {entry.content}
-                </div>
-              </div>
-            ))}
+          <div className="ehr-table-wrapper">
+            <table className="ehr-table" aria-label="Journal entry log table">
+              <thead>
+                <tr>
+                  <th style={{ width: 170 }}>Date &amp; Time</th>
+                  <th>Observation / Symptom Log</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((entry) => (
+                  <tr key={entry.id}>
+                    <td className="timestamp-text" style={{ whiteSpace: "nowrap", verticalAlign: "top" }}>
+                      {formatClinicalTimestamp(entry.created_at)}
+                    </td>
+                    <td style={{ color: "#384643", lineHeight: "var(--lh-normal)" }}>
+                      {entry.content}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -268,41 +282,59 @@ export default function JournalPanel({ token }) {
         </div>
       )}
 
-      {/* Trend Results */}
+      {/* ── 30-Day AI Trend Output Card ── */}
       {trendResult && (
-        <div className="card card-elevated">
-          <span className="urgency-badge urgency-self_care">
-            30-Day Analysis · {trendResult.total_entries} {trendResult.total_entries === 1 ? "entry" : "entries"}
-          </span>
+        <div className="card-triage-accent accent-teal">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span className="urgency-badge urgency-self_care">
+                30-Day Trend Synthesis · {trendResult.total_entries} {trendResult.total_entries === 1 ? "entry" : "entries"}
+              </span>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span className="ai-disclaimer-chip">
+                <Sparkles size={11} /> AI Trend Analysis
+              </span>
+              <span className="timestamp-text">{formatClinicalTimestamp(trendTime)}</span>
+            </div>
+          </div>
 
           {trendResult.detected_clusters?.length > 0 && (
-            <div style={{ marginTop: 16, marginBottom: 6 }}>
-              <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--deep-teal)", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 8 }}>
-                Detected Clusters
-              </span>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <div style={{ marginBottom: 14 }}>
+              <span className="card-section-label">Identified Symptom Clusters</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
                 {trendResult.detected_clusters.map((cluster, i) => (
                   <span
                     key={i}
                     style={{
-                      background: "var(--paper)", border: "1px solid var(--line)",
-                      borderRadius: 999, padding: "4px 12px",
-                      fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--deep-teal)",
+                      background: "var(--paper)",
+                      border: "1px solid var(--line)",
+                      borderRadius: 4,
+                      padding: "3px 10px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "var(--deep-teal)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
                     }}
                   >
-                    🏷 {cluster}
+                    <Tag size={11} /> {cluster}
                   </span>
                 ))}
               </div>
             </div>
           )}
 
-          <h3 style={{ marginTop: 18 }}>Wellness &amp; Symptom Pattern Summary</h3>
-          <p style={{ whiteSpace: "pre-line", lineHeight: "var(--lh-normal)" }}>
+          <span className="card-section-label">Wellness &amp; Symptom Pattern Summary</span>
+          <p style={{ whiteSpace: "pre-line", lineHeight: "var(--lh-normal)", margin: "4px 0 14px", color: "var(--ink)" }}>
             {trendResult.trend_summary}
           </p>
 
-          {trendResult.disclaimer && <p className="disclaimer">{trendResult.disclaimer}</p>}
+          <p className="disclaimer">
+            {trendResult.disclaimer || "Trend synthesis is generated by AI algorithms analyzing your journal text. It is not a clinical diagnosis or medical assessment."}
+          </p>
         </div>
       )}
     </div>

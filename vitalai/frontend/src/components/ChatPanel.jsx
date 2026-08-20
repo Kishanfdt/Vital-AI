@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import { Spinner } from "./Spinner";
 import { EmptyState, EmptyChat } from "./EmptyState";
+import { Sparkles, Send, ShieldAlert, User } from "lucide-react";
+import { formatRelativeTime } from "../utils/formatters";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -15,13 +17,15 @@ export default function ChatPanel({ token }) {
     e.preventDefault();
     if (!input.trim() || loading) return;
 
-    const newMessages = [...messages, { role: "user", content: input }];
+    const timestamp = new Date().toISOString();
+    const newMessages = [...messages, { role: "user", content: input, timestamp }];
     setMessages(newMessages);
     setInput("");
     setError("");
     setLoading(true);
 
-    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+    const assistantMsg = { role: "assistant", content: "", timestamp: new Date().toISOString() };
+    setMessages((prev) => [...prev, assistantMsg]);
 
     try {
       const response = await fetch(`${API_URL}/chat`, {
@@ -30,7 +34,9 @@ export default function ChatPanel({ token }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({
+          messages: newMessages.map(({ role, content }) => ({ role, content })),
+        }),
       });
 
       if (!response.ok || !response.body) {
@@ -66,39 +72,78 @@ export default function ChatPanel({ token }) {
 
   return (
     <div className="page-content">
-      <div className="card">
-        <h2>Wellness Coach Chat</h2>
-        <p style={{ marginBottom: 16 }}>
-          General lifestyle, nutrition, and stress-management guidance — not a substitute for a clinician.
+      {/* ── Page Header ── */}
+      <div style={{ marginBottom: 20 }}>
+        <span className="section-label">Consultation Log</span>
+        <h1>AI Health Coach Chat</h1>
+        <p style={{ margin: 0, color: "var(--muted)" }}>
+          Interactive wellness guidance for lifestyle, nutrition, and recovery routines.
         </p>
+      </div>
 
-        <div className="chat-log" ref={logRef} aria-label="Conversation history" aria-live="polite">
+      <div className="card">
+        {/* Chat History Container */}
+        <div className="chat-log" ref={logRef} aria-label="Clinical consultation log" aria-live="polite">
           {messages.length === 0 && (
             <EmptyState
               illustration={EmptyChat}
-              message="No messages yet — ask about sleep, stress, nutrition, or exercise to get started."
+              message="No messages logged — ask about sleep hygiene, post-workout recovery, or daily nutrition."
             />
           )}
+
           {messages.map((m, i) => (
             <div
               key={i}
-              className={`bubble ${m.role === "user" ? "bubble-user" : "bubble-assistant"}`}
-              aria-label={m.role === "user" ? "You" : "Wellness coach"}
+              className={`chat-row ${m.role === "user" ? "chat-row-user" : "chat-row-assistant"}`}
             >
-              {m.content || (loading && i === messages.length - 1 ? "…" : "")}
+              {/* Message Header / Avatar */}
+              <div className="chat-sender-header" style={{ justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                {m.role === "assistant" ? (
+                  <>
+                    <span className="ai-disclaimer-chip" style={{ fontSize: 10, padding: "1px 6px" }}>
+                      <Sparkles size={10} /> AI Health Coach
+                    </span>
+                    <span className="timestamp-text">{formatRelativeTime(m.timestamp)}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="timestamp-text">{formatRelativeTime(m.timestamp)}</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--deep-teal)" }}>
+                      <User size={12} /> Patient
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Message Content Bubble */}
+              <div
+                className={`bubble ${m.role === "user" ? "bubble-user" : "bubble-assistant"}`}
+                aria-label={m.role === "user" ? "Patient message" : "AI Health Coach response"}
+              >
+                {m.content || (loading && i === messages.length - 1 ? "Analyzing clinical query…" : "")}
+              </div>
             </div>
           ))}
         </div>
 
         {error && <p className="error-text" role="alert">{error}</p>}
 
-        <form onSubmit={sendMessage} style={{ display: "flex", gap: 10, marginTop: 12 }}>
+        {/* Persistent Clinical Disclaimer Strip */}
+        <div className="chat-disclaimer-strip">
+          <ShieldAlert size={14} style={{ color: "var(--warning)", flexShrink: 0 }} />
+          <span>
+            This chat provides general health &amp; wellness guidance, not a medical diagnosis. In an emergency, call 911 immediately.
+          </span>
+        </div>
+
+        {/* Input Form */}
+        <form onSubmit={sendMessage} style={{ display: "flex", gap: 10 }}>
           <input
             id="chat-input"
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about sleep, stress, nutrition…"
+            placeholder="Type your health or lifestyle question…"
             aria-label="Message to wellness coach"
             style={{ flex: 1 }}
           />
@@ -109,7 +154,7 @@ export default function ChatPanel({ token }) {
             aria-label="Send message"
             style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}
           >
-            {loading ? <Spinner size="sm" /> : null}
+            {loading ? <Spinner size="sm" /> : <Send size={14} />}
             Send
           </button>
         </form>

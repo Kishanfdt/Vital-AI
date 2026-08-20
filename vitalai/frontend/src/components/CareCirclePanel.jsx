@@ -14,17 +14,18 @@ import {
   Pill,
   CalendarDays,
   Lock,
-  RefreshCw,
+  X,
 } from "lucide-react";
+import { formatRelativeTime, formatClinicalTimestamp } from "../utils/formatters";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 /* ── Status Badge ────────────────────────────────────────────── */
 function StatusBadge({ status }) {
   const config = {
-    accepted: { bg: "#ecfdf5", color: "#065f46", border: "#a7f3d0", label: "Active Caregiver", icon: CheckCircle },
-    pending:  { bg: "#fffbeb", color: "#92400e", border: "#fde68a", label: "Pending Acceptance", icon: Clock },
-    revoked:  { bg: "#fef2f2", color: "#991b1b", border: "#fecaca", label: "Revoked", icon: XCircle },
+    accepted: { bg: "var(--success-bg)", color: "var(--success)", border: "var(--success-border)", label: "Active Caregiver", icon: CheckCircle },
+    pending:  { bg: "var(--warning-bg)", color: "var(--warning)", border: "var(--warning-border)", label: "Pending Acceptance", icon: Clock },
+    revoked:  { bg: "var(--danger-bg)", color: "var(--danger)", border: "var(--danger-border)", label: "Revoked", icon: XCircle },
   };
   const c = config[status] || config.pending;
   const Icon = c.icon;
@@ -34,10 +35,12 @@ function StatusBadge({ status }) {
         background: c.bg,
         color: c.color,
         border: `1px solid ${c.border}`,
-        padding: "3px 10px",
-        borderRadius: 999,
-        fontSize: "var(--text-xs)",
-        fontWeight: 600,
+        padding: "3px 9px",
+        borderRadius: 4,
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: "0.04em",
+        textTransform: "uppercase",
         display: "inline-flex",
         alignItems: "center",
         gap: 5,
@@ -105,47 +108,47 @@ function SummaryModal({ ownerId, onClose, token }) {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, paddingBottom: 14, borderBottom: "1px solid var(--line)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "1px solid var(--line)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--deep-teal)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Shield size={18} />
+            <div style={{ width: 32, height: 32, borderRadius: 6, background: "var(--deep-teal)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Shield size={16} />
             </div>
             <div>
-              <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--deep-teal)", margin: 0, fontFamily: "var(--font-display)" }}>
-                Shared Clinical Health Summary
-              </h3>
-              <span style={{ fontSize: "var(--text-xs)", color: "var(--muted)" }}>Caregiver Read-Only Access</span>
+              <span className="card-section-label" style={{ margin: 0, color: "var(--ink)" }}>Shared Clinical Record</span>
+              <span style={{ fontSize: 11, color: "var(--muted)" }}>Caregiver Read-Only Access</span>
             </div>
           </div>
 
-          <button className="btn-ghost" onClick={onClose} style={{ fontSize: 18, padding: "4px 10px" }}>✕</button>
+          <button className="btn-ghost" onClick={onClose} style={{ padding: "4px 8px" }}>
+            <X size={16} />
+          </button>
         </div>
 
         {/* Privacy Banner */}
-        <div style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: "var(--radius-sm)", padding: "10px 14px", marginBottom: 20, display: "flex", alignItems: "center", gap: 10, fontSize: "var(--text-xs)", color: "var(--muted)" }}>
-          <Lock size={16} style={{ color: "var(--deep-teal)", flexShrink: 0 }} />
-          <span><strong>Privacy Enforced:</strong> Raw health journal entries and documents remain private to the patient and are excluded from caregiver view.</span>
+        <div style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: "var(--radius-xs)", padding: "10px 12px", marginBottom: 18, display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--muted)" }}>
+          <Lock size={15} style={{ color: "var(--deep-teal)", flexShrink: 0 }} />
+          <span><strong>Privacy Enforced:</strong> Raw health journal notes and private document files are excluded from caregiver summary views.</span>
         </div>
 
         {loading ? (
           <SkeletonLines lines={6} />
         ) : error ? (
-          <p style={{ color: "var(--clay)", fontSize: "var(--text-sm)" }}>{error}</p>
+          <p className="error-text">{error}</p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             {/* Active Medications */}
             <div>
-              <h4 style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--deep-teal)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                <Pill size={15} /> Active Medications ({summary?.medications?.length ?? 0})
-              </h4>
+              <span className="card-section-label" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                <Pill size={14} /> Active Prescriptions ({summary?.medications?.length ?? 0})
+              </span>
               {!summary?.medications?.length ? (
-                <p style={{ fontSize: "var(--text-xs)", color: "var(--muted)" }}>No active medications listed.</p>
+                <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>No active medications listed.</p>
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
                   {summary.medications.map((m) => (
-                    <div key={m.id} style={{ background: "var(--paper)", border: "1px solid var(--line)", padding: "10px 12px", borderRadius: "var(--radius-sm)" }}>
-                      <strong style={{ fontSize: "var(--text-sm)", color: "var(--ink)", display: "block" }}>{m.name}</strong>
-                      <span style={{ fontSize: "var(--text-xs)", color: "var(--muted)" }}>{m.dosage || "Dosage not specified"}</span>
+                    <div key={m.id} style={{ background: "var(--paper)", border: "1px solid var(--line)", padding: "10px 12px", borderRadius: "var(--radius-xs)" }}>
+                      <strong style={{ fontSize: 13, color: "var(--ink)", display: "block" }}>{m.name}</strong>
+                      <span style={{ fontSize: 12, color: "var(--muted)" }}>{m.dosage || "Dosage not specified"}</span>
                     </div>
                   ))}
                 </div>
@@ -154,23 +157,22 @@ function SummaryModal({ ownerId, onClose, token }) {
 
             {/* Upcoming Appointments */}
             <div>
-              <h4 style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--deep-teal)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                <CalendarDays size={15} /> Appointments ({summary?.appointments?.length ?? 0})
-              </h4>
+              <span className="card-section-label" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                <CalendarDays size={14} /> Care Visits ({summary?.appointments?.length ?? 0})
+              </span>
               {!summary?.appointments?.length ? (
-                <p style={{ fontSize: "var(--text-xs)", color: "var(--muted)" }}>No appointments scheduled.</p>
+                <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>No care visits scheduled.</p>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {summary.appointments.map((a) => (
-                    <div key={a.id} style={{ background: "var(--paper)", border: "1px solid var(--line)", padding: "12px 14px", borderRadius: "var(--radius-sm)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <strong style={{ fontSize: "var(--text-sm)", color: "var(--ink)" }}>{a.provider_name}</strong>
-                        <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--deep-teal)" }}>
-                          {new Date(a.appointment_date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    <div key={a.id} style={{ background: "var(--paper)", border: "1px solid var(--line)", padding: "10px 12px", borderRadius: "var(--radius-xs)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+                        <strong style={{ fontSize: 13, color: "var(--ink)" }}>{a.provider_name}</strong>
+                        <span className="timestamp-text">
+                          {new Date(a.appointment_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                         </span>
                       </div>
-                      <p style={{ fontSize: "var(--text-xs)", color: "var(--muted)", margin: 0 }}>{a.reason}</p>
-                      {a.notes && <p style={{ fontSize: "var(--text-xs)", color: "var(--ink)", marginTop: 6, fontStyle: "italic" }}>Notes: {a.notes}</p>}
+                      <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>{a.reason}</p>
                     </div>
                   ))}
                 </div>
@@ -179,25 +181,25 @@ function SummaryModal({ ownerId, onClose, token }) {
 
             {/* Triage History */}
             <div>
-              <h4 style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--deep-teal)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                <Activity size={15} /> Recent Symptom Triage Checks ({summary?.triage_history?.length ?? 0})
-              </h4>
+              <span className="card-section-label" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                <Activity size={14} /> Triage Checks ({summary?.triage_history?.length ?? 0})
+              </span>
               {!summary?.triage_history?.length ? (
-                <p style={{ fontSize: "var(--text-xs)", color: "var(--muted)" }}>No triage checks recorded.</p>
+                <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>No triage assessments recorded.</p>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {summary.triage_history.map((t) => (
-                    <div key={t.id} style={{ background: "var(--paper)", border: "1px solid var(--line)", padding: "12px 14px", borderRadius: "var(--radius-sm)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                        <strong style={{ fontSize: "var(--text-xs)", color: "var(--muted)" }}>
-                          {new Date(t.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-                        </strong>
-                        <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, textTransform: "capitalize", color: t.urgency === "seek_emergency_care" ? "#a5432a" : t.urgency === "see_doctor_soon" ? "#b8823a" : "#3d7a5c" }}>
+                    <div key={t.id} style={{ background: "var(--paper)", border: "1px solid var(--line)", padding: "10px 12px", borderRadius: "var(--radius-xs)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span className="timestamp-text">
+                          {formatClinicalTimestamp(t.created_at)}
+                        </span>
+                        <span className={`urgency-badge urgency-${t.urgency}`} style={{ fontSize: 10 }}>
                           {t.urgency.replace(/_/g, " ")}
                         </span>
                       </div>
-                      <p style={{ fontSize: "var(--text-xs)", color: "var(--ink)", margin: "0 0 4px", fontWeight: 600 }}>Symptoms: {t.symptoms}</p>
-                      <p style={{ fontSize: "var(--text-xs)", color: "var(--muted)", margin: 0 }}>{t.reasoning}</p>
+                      <p style={{ fontSize: 12, color: "var(--ink)", margin: "0 0 2px", fontWeight: 600 }}>Symptoms: {t.symptoms}</p>
+                      <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>{t.reasoning}</p>
                     </div>
                   ))}
                 </div>
@@ -285,7 +287,7 @@ export default function CareCirclePanel({ token, userEmail }) {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.detail || "Failed to revoke access");
-      toast("Access status updated.", "success");
+      toast("Caregiver permissions updated.", "success");
       fetchCareCircle();
     } catch (err) {
       toast(err.message, "error");
@@ -307,7 +309,7 @@ export default function CareCirclePanel({ token, userEmail }) {
       document.body.appendChild(a);
       a.click();
       a.remove();
-      toast("Data export downloaded!", "success");
+      toast("Patient health record exported (JSON).", "success");
     } catch (err) {
       toast("Failed to export data.", "error");
     } finally {
@@ -318,18 +320,19 @@ export default function CareCirclePanel({ token, userEmail }) {
   return (
     <div className="page-content">
       {/* ── Page Header ── */}
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 20 }}>
+        <span className="section-label">Care Access Control</span>
         <h1>Care Circle &amp; Family Sharing</h1>
-        <p>Grant trusted family members or caregivers permissioned, read-only access to your health summary.</p>
+        <p style={{ margin: 0, color: "var(--muted)" }}>
+          Grant permissioned, read-only summary visibility to designated family members or healthcare proxies.
+        </p>
       </div>
 
       {/* ── Invite Form Card ── */}
-      <div className="card" style={{ marginBottom: 28 }}>
-        <h3 style={{ fontSize: "var(--text-base)", fontWeight: 700, color: "var(--deep-teal)", marginBottom: 4, fontFamily: "var(--font-display)" }}>
-          Invite a Caregiver or Family Member
-        </h3>
-        <p style={{ fontSize: "var(--text-xs)", color: "var(--muted)", marginBottom: 16 }}>
-          Enter their email address to grant read-only visibility into your triage history, active medications, and appointments.
+      <div className="card">
+        <span className="card-section-label">Add Caregiver Permission</span>
+        <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 14 }}>
+          Enter caregiver email address to issue a permissioned read-only summary invitation.
         </p>
 
         <form onSubmit={handleInvite} style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
@@ -339,11 +342,11 @@ export default function CareCirclePanel({ token, userEmail }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            style={{ flex: "1 1 260px", padding: "10px 14px", borderRadius: "var(--radius-sm)", border: "1px solid var(--line)", fontSize: "var(--text-sm)", background: "var(--white)", color: "var(--ink)" }}
+            style={{ flex: "1 1 260px" }}
           />
           <button type="submit" className="btn-primary" disabled={inviting} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <UserPlus size={15} />
-            {inviting ? "Sending..." : "Send Invite"}
+            {inviting ? "Sending Invitation…" : "Issue Caregiver Invite"}
           </button>
         </form>
       </div>
@@ -352,27 +355,27 @@ export default function CareCirclePanel({ token, userEmail }) {
       {loading ? (
         <div className="card"><SkeletonLines lines={5} /></div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20, marginBottom: 28 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20, marginBottom: 24 }}>
           {/* People You Share With */}
           <div className="card">
-            <h3 style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--deep-teal)", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-              <Users size={16} /> Care Circle You Manage ({data.shared_by_me.length})
-            </h3>
+            <span className="card-section-label" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+              <Users size={15} /> Authorized Caregivers ({data.shared_by_me.length})
+            </span>
             {!data.shared_by_me.length ? (
-              <p style={{ fontSize: "var(--text-xs)", color: "var(--muted)", margin: 0 }}>You have not invited any caregivers yet.</p>
+              <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>No caregiver access granted yet.</p>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {data.shared_by_me.map((item) => (
-                  <div key={item.id} style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: "var(--radius-sm)", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+                  <div key={item.id} style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: "var(--radius-xs)", padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
                     <div>
-                      <strong style={{ fontSize: "var(--text-sm)", color: "var(--ink)", display: "block" }}>{item.invited_email}</strong>
+                      <strong style={{ fontSize: 13, color: "var(--ink)", display: "block" }}>{item.invited_email}</strong>
                       <div style={{ marginTop: 4 }}>
                         <StatusBadge status={item.status} />
                       </div>
                     </div>
 
                     {item.status !== "revoked" && (
-                      <button className="btn-ghost" onClick={() => handleRevoke(item.id)} style={{ fontSize: "var(--text-xs)", color: "var(--clay)", padding: "4px 8px" }}>
+                      <button className="btn-danger" onClick={() => handleRevoke(item.id)} style={{ fontSize: 11, padding: "3px 8px" }}>
                         Revoke Access
                       </button>
                     )}
@@ -384,17 +387,17 @@ export default function CareCirclePanel({ token, userEmail }) {
 
           {/* Summaries Shared With You */}
           <div className="card">
-            <h3 style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--deep-teal)", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-              <Shield size={16} /> Shared With You ({data.shared_with_me.length})
-            </h3>
+            <span className="card-section-label" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+              <Shield size={15} /> Records Shared With You ({data.shared_with_me.length})
+            </span>
             {!data.shared_with_me.length ? (
-              <p style={{ fontSize: "var(--text-xs)", color: "var(--muted)", margin: 0 }}>No one has shared their health summary with you yet.</p>
+              <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>No patient records shared with your account.</p>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {data.shared_with_me.map((item) => (
-                  <div key={item.id} style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: "var(--radius-sm)", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+                  <div key={item.id} style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: "var(--radius-xs)", padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
                     <div>
-                      <strong style={{ fontSize: "var(--text-sm)", color: "var(--ink)", display: "block" }}>Patient ID: {item.owner_user_id.slice(0, 8)}…</strong>
+                      <strong style={{ fontSize: 13, color: "var(--ink)", display: "block" }}>Patient Record ID: {item.owner_user_id.slice(0, 8)}…</strong>
                       <div style={{ marginTop: 4 }}>
                         <StatusBadge status={item.status} />
                       </div>
@@ -402,13 +405,13 @@ export default function CareCirclePanel({ token, userEmail }) {
 
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       {item.status === "pending" && (
-                        <button className="btn-primary" onClick={() => handleAccept(item.id)} style={{ fontSize: "var(--text-xs)", padding: "5px 10px" }}>
-                          Accept
+                        <button className="btn-primary" onClick={() => handleAccept(item.id)} style={{ fontSize: 11, padding: "4px 8px" }}>
+                          Accept Invite
                         </button>
                       )}
                       {item.status === "accepted" && (
-                        <button className="btn-secondary" onClick={() => setActiveModalOwner(item.owner_user_id)} style={{ fontSize: "var(--text-xs)", padding: "5px 10px", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                          <Eye size={13} /> View Summary
+                        <button className="btn-ghost" onClick={() => setActiveModalOwner(item.owner_user_id)} style={{ fontSize: 11, padding: "4px 8px", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <Eye size={12} /> View Summary
                         </button>
                       )}
                     </div>
@@ -420,21 +423,19 @@ export default function CareCirclePanel({ token, userEmail }) {
         </div>
       )}
 
-      {/* ── Data Portability / Export Section (Phase J) ── */}
-      <div className="card" style={{ background: "linear-gradient(180deg, var(--white) 0%, var(--paper) 100%)", border: "1px solid var(--line)" }}>
+      {/* ── Data Portability / Export Section ── */}
+      <div className="card">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
           <div>
-            <h3 style={{ fontSize: "var(--text-base)", fontWeight: 700, color: "var(--deep-teal)", margin: "0 0 4px 0", fontFamily: "var(--font-display)" }}>
-              Data Ownership &amp; Export
-            </h3>
-            <p style={{ fontSize: "var(--text-xs)", color: "var(--muted)", margin: 0 }}>
-              Download your complete personal health record (triage, journal, meds, appointments, document metadata) in standard JSON format.
+            <span className="card-section-label" style={{ margin: 0 }}>Data Ownership &amp; Portability</span>
+            <p style={{ fontSize: 12, color: "var(--muted)", margin: "2px 0 0" }}>
+              Export complete patient health records (triage checks, journal notes, medications, appointments) in structured JSON format.
             </p>
           </div>
 
-          <button className="btn-secondary" onClick={handleExportData} disabled={exporting} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <Download size={15} />
-            {exporting ? "Preparing Export..." : "Export Complete Record (JSON)"}
+          <button className="btn-ghost" onClick={handleExportData} disabled={exporting} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <Download size={14} />
+            {exporting ? "Packaging Export…" : "Export Record (JSON)"}
           </button>
         </div>
       </div>

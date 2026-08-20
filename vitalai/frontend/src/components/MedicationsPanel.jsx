@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Spinner, SkeletonLines } from "./Spinner";
 import { useToast } from "./Toast";
 import { EmptyState, EmptyMedications } from "./EmptyState";
+import { Pill, Trash2, AlertTriangle, CheckCircle2, ShieldAlert } from "lucide-react";
+import { formatRelativeTime, formatClinicalTimestamp } from "../utils/formatters";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -16,6 +18,7 @@ export default function MedicationsPanel({ token }) {
   const [checking, setChecking]       = useState(false);
   const [error, setError]             = useState("");
   const [checkResult, setCheckResult] = useState(null);
+  const [checkTime, setCheckTime]     = useState(null);
 
   useEffect(() => { fetchMedications(); }, [token]);
 
@@ -72,7 +75,7 @@ export default function MedicationsPanel({ token }) {
       });
       if (!response.ok) throw new Error(`Failed to delete (${response.status})`);
       setMedications((prev) => prev.filter((m) => m.id !== id));
-      toast(`${medName} removed.`, "info");
+      toast(`${medName} removed from medication record.`, "info");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -95,7 +98,8 @@ export default function MedicationsPanel({ token }) {
       }
       const data = await response.json();
       setCheckResult(data);
-      toast("Interaction check complete.", "success");
+      setCheckTime(new Date().toISOString());
+      toast("OpenFDA drug interaction check complete.", "success");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -105,130 +109,171 @@ export default function MedicationsPanel({ token }) {
 
   return (
     <div className="page-content">
-      {/* Add Form */}
-      <div className="card">
-        <h2>My Medications</h2>
-        <p>Track your current prescription and over-the-counter medications.</p>
+      {/* ── Page Header ── */}
+      <div style={{ marginBottom: 20 }}>
+        <span className="section-label">Prescription &amp; OTC Log</span>
+        <h1>Active Medication Records</h1>
+        <p style={{ margin: 0, color: "var(--muted)" }}>
+          Structured EHR medication list and OpenFDA cross-interaction analysis.
+        </p>
+      </div>
 
+      {/* ── Add Medication Form & Table ── */}
+      <div className="card">
+        <span className="card-section-label">Log New Medication</span>
         <form onSubmit={handleAddMedication} style={{ marginBottom: 24 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <div>
-              <label htmlFor="med-name">Medication Name</label>
+              <label htmlFor="med-name">Medication Name *</label>
               <input
                 id="med-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Aspirin, Ibuprofen"
+                placeholder="e.g. Lisinopril, Aspirin, Metformin"
                 required
               />
             </div>
             <div>
-              <label htmlFor="med-dosage">
-                Dosage / Frequency{" "}
-                <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, opacity: 0.65 }}>
-                  (optional)
-                </span>
-              </label>
+              <label htmlFor="med-dosage">Dosage &amp; Frequency (Optional)</label>
               <input
                 id="med-dosage"
                 type="text"
                 value={dosage}
                 onChange={(e) => setDosage(e.target.value)}
-                placeholder="e.g. 81mg daily"
+                placeholder="e.g. 10mg daily, 81mg morning"
               />
             </div>
           </div>
 
           {error && <p className="error-text" role="alert">{error}</p>}
 
-          <div className="row">
+          <div className="row" style={{ marginTop: 16 }}>
             <button className="btn-primary" type="submit" disabled={adding || !name.trim()}>
               {adding ? (
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Spinner size="sm" /> Adding…
+                  <Spinner size="sm" /> Indexing Medication…
                 </span>
-              ) : "Add medication"}
+              ) : (
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Pill size={15} /> Add Medication Record
+                </span>
+              )}
             </button>
           </div>
         </form>
 
         <hr className="divider" />
 
-        <h3 style={{ marginBottom: 14 }}>Active Medication List</h3>
+        {/* ── Tabular EHR Medication List ── */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <span className="card-section-label" style={{ margin: 0 }}>Active Prescriptions &amp; Supplements</span>
+          <span className="timestamp-text">{medications.length} Recorded</span>
+        </div>
 
         {loadingMeds ? (
-          <div style={{ marginTop: 12 }}><SkeletonLines lines={3} /></div>
+          <SkeletonLines lines={3} />
         ) : medications.length === 0 ? (
           <EmptyState
             illustration={EmptyMedications}
-            message="No medications added yet — add your first one above."
+            message="No active medications logged in patient chart. Add your first prescription above."
           />
         ) : (
-          <ul style={{ listStyle: "none", padding: 0, margin: "0 0 20px" }} aria-label="Medication list">
-            {medications.map((med) => (
-              <li key={med.id} className="med-item">
-                <div>
-                  <span style={{ fontWeight: 600, fontSize: "var(--text-sm)" }}>{med.name}</span>
-                  {med.dosage && (
-                    <span style={{ color: "var(--muted)", marginLeft: 8, fontSize: "var(--text-xs)" }}>
-                      {med.dosage}
-                    </span>
-                  )}
-                </div>
-                <button
-                  className="btn-danger"
-                  onClick={() => handleDelete(med.id, med.name)}
-                  disabled={deletingId === med.id}
-                  aria-label={`Remove ${med.name}`}
-                  style={{ padding: "5px 11px", fontSize: "var(--text-xs)" }}
-                >
-                  {deletingId === med.id ? "Removing…" : "Remove"}
-                </button>
-              </li>
-            ))}
-          </ul>
+          <div className="ehr-table-wrapper">
+            <table className="ehr-table" aria-label="Active medication table">
+              <thead>
+                <tr>
+                  <th>Medication Name</th>
+                  <th>Dosage / Schedule</th>
+                  <th>Date Added</th>
+                  <th style={{ textAlign: "right" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {medications.map((med) => (
+                  <tr key={med.id}>
+                    <td style={{ fontWeight: 600, color: "var(--ink)" }}>{med.name}</td>
+                    <td style={{ color: "#384643" }}>{med.dosage || "—"}</td>
+                    <td className="timestamp-text">{formatRelativeTime(med.created_at)}</td>
+                    <td style={{ textAlign: "right" }}>
+                      <button
+                        className="btn-danger"
+                        onClick={() => handleDelete(med.id, med.name)}
+                        disabled={deletingId === med.id}
+                        aria-label={`Remove ${med.name}`}
+                        style={{ padding: "4px 8px", fontSize: 11 }}
+                      >
+                        {deletingId === med.id ? "Removing…" : "Remove"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
-        <div className="row" style={{ marginTop: medications.length === 0 ? 0 : 4 }}>
+        {/* Check Interactions Action */}
+        <div className="row" style={{ marginTop: 16 }}>
           <button
             className="btn-primary"
             onClick={handleCheckInteractions}
             disabled={checking || medications.length === 0}
-            aria-label="Check drug interactions for my current medications"
+            aria-label="Run OpenFDA drug interaction cross-check"
+            style={{ display: "flex", alignItems: "center", gap: 6 }}
           >
             {checking ? (
-              <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <Spinner size="sm" /> Checking OpenFDA…
-              </span>
-            ) : "Check interactions"}
+              <>
+                <Spinner size="sm" /> Querying OpenFDA Database…
+              </>
+            ) : (
+              <>
+                <ShieldAlert size={15} /> Run Drug Interaction Check
+              </>
+            )}
           </button>
         </div>
       </div>
 
-      {/* Interaction Results */}
+      {/* ── Interaction Check Output (Clinical Alert Box) ── */}
       {checkResult && (
-        <div className="card card-elevated">
-          <span
-            className={`urgency-badge ${
-              checkResult.has_interactions ? "urgency-seek_emergency_care" : "urgency-self_care"
-            }`}
-          >
-            {checkResult.has_interactions ? "Potential Interactions" : "No Major Interactions Detected"}
-          </span>
+        <div
+          className={`card-triage-accent ${
+            checkResult.has_interactions ? "accent-seek_emergency_care" : "accent-self_care"
+          }`}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {checkResult.has_interactions ? (
+                <AlertTriangle size={18} style={{ color: "var(--danger)" }} />
+              ) : (
+                <CheckCircle2 size={18} style={{ color: "var(--success)" }} />
+              )}
+              <span
+                className={`urgency-badge ${
+                  checkResult.has_interactions ? "urgency-seek_emergency_care" : "urgency-self_care"
+                }`}
+              >
+                {checkResult.has_interactions ? "Potential Interactions Detected" : "No Major Interactions Identified"}
+              </span>
+            </div>
+            <span className="timestamp-text">OpenFDA Analysis · {formatClinicalTimestamp(checkTime)}</span>
+          </div>
 
-          <h3 style={{ marginTop: 16 }}>Interaction &amp; Safety Analysis</h3>
-          <p style={{ whiteSpace: "pre-line", lineHeight: "var(--lh-normal)" }}>
+          <span className="card-section-label">Safety &amp; Interaction Rationale</span>
+          <p style={{ whiteSpace: "pre-line", lineHeight: "var(--lh-normal)", margin: "4px 0 12px", color: "var(--ink)" }}>
             {checkResult.analysis}
           </p>
 
-          {checkResult.medications_checked.length > 0 && (
-            <p style={{ fontSize: "var(--text-xs)", color: "var(--muted)", marginTop: 14 }}>
-              Evaluated: {checkResult.medications_checked.join(", ")}
+          {checkResult.medications_checked?.length > 0 && (
+            <p style={{ fontSize: 12, color: "var(--muted)", margin: "8px 0 0" }}>
+              Medications evaluated: <strong>{checkResult.medications_checked.join(", ")}</strong>
             </p>
           )}
 
-          <p className="disclaimer">{checkResult.disclaimer}</p>
+          <p className="disclaimer">
+            {checkResult.disclaimer || "Drug interaction results are powered by OpenFDA API datasets for informational screening only. Always consult your prescribing physician or pharmacist before changing medication regimens."}
+          </p>
         </div>
       )}
     </div>

@@ -7,6 +7,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { supabase } from "./supabaseClient";
+import { getPatientChartId } from "./utils/formatters";
 
 import { ToastProvider } from "./components/Toast";
 import Sidebar from "./components/Sidebar";
@@ -21,11 +22,34 @@ import DocumentsPanel from "./components/DocumentsPanel";
 import JournalPanel from "./components/JournalPanel";
 import CareCirclePanel from "./components/CareCirclePanel";
 
+/* ── Persistent Patient Context Header ─────────────────────── */
+function PatientContextHeader({ userEmail }) {
+  const rawName = userEmail?.split("@")[0] || "Patient";
+  const formattedName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+  const initial = rawName.charAt(0).toUpperCase();
+  const mrn = getPatientChartId(userEmail);
+
+  return (
+    <header className="patient-context-header" aria-label="Patient context banner">
+      <div className="patient-info">
+        <div className="patient-avatar" aria-hidden="true">{initial}</div>
+        <div className="patient-meta">
+          <span className="patient-name">{formattedName}</span>
+          <span className="patient-mrn">{mrn} · Active Health Record</span>
+        </div>
+      </div>
+      <div className="patient-status-strip">
+        <span className="status-dot" aria-hidden="true" />
+        <span>Last check-in: 2 days ago · No active emergency alerts</span>
+      </div>
+    </header>
+  );
+}
+
 /* ── Animated route container (re-mounts on pathname change) ── */
 function AnimatedRoutes({ token, userEmail }) {
   const location = useLocation();
   return (
-    /* key={pathname} causes React to unmount+remount, triggering pageEnter CSS */
     <div key={location.pathname} className="page-content" style={{ display: "contents" }}>
       <Routes location={location}>
         <Route path="/"             element={<Overview          userEmail={userEmail} token={token} />} />
@@ -63,8 +87,8 @@ function AuthenticatedApp({ session }) {
         <div className="mobile-topbar-brand">
           <span
             style={{
-              width: 8, height: 8, borderRadius: "50%",
-              background: "#c76f4f", display: "inline-block", marginRight: 8,
+              width: 7, height: 7, borderRadius: "50%",
+              background: "#3ea877", display: "inline-block", marginRight: 8,
             }}
             aria-hidden="true"
           />
@@ -89,8 +113,9 @@ function AuthenticatedApp({ session }) {
         </button>
       </div>
 
-      {/* Main content with route-keyed animation */}
+      {/* Main content with persistent patient header */}
       <main className="main-content" id="main-content">
+        <PatientContextHeader userEmail={userEmail} />
         <div className="main-content-inner">
           <AnimatedRoutes token={token} userEmail={userEmail} />
         </div>

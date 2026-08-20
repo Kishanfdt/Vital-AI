@@ -2,22 +2,25 @@ import { useEffect, useState } from "react";
 import { Spinner, SkeletonLines } from "./Spinner";
 import { useToast } from "./Toast";
 import { EmptyState, EmptyDocuments } from "./EmptyState";
+import { FileText, Upload, Sparkles, ChevronDown, ChevronUp, CheckCircle, Search } from "lucide-react";
+import { formatRelativeTime, formatClinicalTimestamp } from "../utils/formatters";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function DocumentsPanel({ token }) {
   const toast = useToast();
-  const [documents, setDocuments]     = useState([]);
-  const [loadingDocs, setLoadingDocs] = useState(true);
+  const [documents, setDocuments]       = useState([]);
+  const [loadingDocs, setLoadingDocs]   = useState(true);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading]     = useState(false);
-  const [uploadError, setUploadError] = useState("");
+  const [uploading, setUploading]       = useState(false);
+  const [uploadError, setUploadError]   = useState("");
 
-  const [question, setQuestion]       = useState("");
-  const [asking, setAsking]           = useState(false);
-  const [askError, setAskError]       = useState("");
-  const [askResult, setAskResult]     = useState(null);
-  const [showSources, setShowSources] = useState(false);
+  const [question, setQuestion]         = useState("");
+  const [asking, setAsking]             = useState(false);
+  const [askError, setAskError]         = useState("");
+  const [askResult, setAskResult]       = useState(null);
+  const [showSources, setShowSources]   = useState(false);
+  const [askTime, setAskTime]           = useState(null);
 
   useEffect(() => { fetchDocuments(); }, [token]);
 
@@ -87,7 +90,8 @@ export default function DocumentsPanel({ token }) {
       }
       const data = await response.json();
       setAskResult(data);
-      toast("Answer ready.", "success");
+      setAskTime(new Date().toISOString());
+      toast("Clinical answer synthesized from document context.", "success");
     } catch (err) {
       setAskError(err.message);
     } finally {
@@ -97,15 +101,20 @@ export default function DocumentsPanel({ token }) {
 
   return (
     <div className="page-content">
-      {/* Upload Card */}
-      <div className="card">
-        <h2>Medical Document Q&amp;A</h2>
-        <p style={{ marginBottom: 20 }}>
-          Upload lab reports, clinical notes, or prescriptions (PDF) and ask questions grounded in your document context.
+      {/* ── Page Header ── */}
+      <div style={{ marginBottom: 20 }}>
+        <span className="section-label">Records Repository</span>
+        <h1>Medical Document Q&amp;A</h1>
+        <p style={{ margin: 0, color: "var(--muted)" }}>
+          Upload PDF clinical notes or lab results and run grounded Q&amp;A with source attribution.
         </p>
+      </div>
 
+      {/* ── Document Upload & Repository Table ── */}
+      <div className="card">
+        <span className="card-section-label">Upload Medical File</span>
         <form onSubmit={handleFileUpload} style={{ marginBottom: 24 }}>
-          <label htmlFor="pdf-file-input">Upload PDF Document</label>
+          <label htmlFor="pdf-file-input">PDF Clinical Report or Lab Summary *</label>
           <input
             id="pdf-file-input"
             type="file"
@@ -115,117 +124,160 @@ export default function DocumentsPanel({ token }) {
 
           {uploadError && <p className="error-text" role="alert">{uploadError}</p>}
 
-          <div className="row">
+          <div className="row" style={{ marginTop: 14 }}>
             <button className="btn-primary" type="submit" disabled={uploading || !selectedFile}>
               {uploading ? (
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Spinner size="sm" /> Processing PDF…
+                  <Spinner size="sm" /> Chunking &amp; Indexing PDF…
                 </span>
-              ) : "Upload & Index PDF"}
+              ) : (
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Upload size={15} /> Upload &amp; Index Record
+                </span>
+              )}
             </button>
           </div>
         </form>
 
         <hr className="divider" />
 
-        <h3 style={{ marginBottom: 14 }}>Uploaded Documents</h3>
+        {/* ── EHR Document List ── */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <span className="card-section-label" style={{ margin: 0 }}>Indexed Health Records Repository</span>
+          <span className="timestamp-text">{documents.length} Files Indexed</span>
+        </div>
 
         {loadingDocs ? (
-          <div style={{ marginTop: 12 }}><SkeletonLines lines={3} /></div>
+          <SkeletonLines lines={3} />
         ) : documents.length === 0 ? (
           <EmptyState
             illustration={EmptyDocuments}
-            message="No documents uploaded yet — upload a PDF above to get started."
+            message="No health documents indexed yet. Upload a PDF clinical note above to enable grounded Q&amp;A."
           />
         ) : (
-          <ul style={{ listStyle: "none", padding: 0, margin: "0 0 4px" }} aria-label="Uploaded documents">
-            {documents.map((doc, idx) => (
-              <li key={idx} className="med-item">
-                <div>
-                  <span style={{ fontWeight: 600, fontSize: "var(--text-sm)" }}>📄 {doc.filename}</span>
-                  <span style={{ color: "var(--muted)", marginLeft: 8, fontSize: "var(--text-xs)" }}>
-                    ({doc.chunks_count} {doc.chunks_count === 1 ? "chunk" : "chunks"})
-                  </span>
-                </div>
-                {doc.created_at && (
-                  <span style={{ color: "var(--muted)", fontSize: "var(--text-xs)" }}>
-                    {new Date(doc.created_at).toLocaleDateString()}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
+          <div className="ehr-table-wrapper">
+            <table className="ehr-table" aria-label="Uploaded documents table">
+              <thead>
+                <tr>
+                  <th>Record Name</th>
+                  <th>Indexed Chunks</th>
+                  <th>Upload Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {documents.map((doc, idx) => (
+                  <tr key={idx}>
+                    <td style={{ fontWeight: 600, color: "var(--ink)", display: "flex", alignItems: "center", gap: 8 }}>
+                      <FileText size={15} style={{ color: "var(--deep-teal)", flexShrink: 0 }} />
+                      <span>{doc.filename}</span>
+                    </td>
+                    <td style={{ color: "#384643" }}>
+                      {doc.chunks_count} {doc.chunks_count === 1 ? "chunk" : "chunks"}
+                    </td>
+                    <td className="timestamp-text">
+                      {doc.created_at ? formatRelativeTime(doc.created_at) : "Recent"}
+                    </td>
+                    <td>
+                      <span className="status-badge status-good" style={{ fontSize: 10, padding: "2px 6px" }}>
+                        Indexed
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      {/* Q&A Card */}
+      {/* ── Grounded Q&A Card ── */}
       <div className="card">
-        <h2>Ask Your Documents</h2>
-        <p style={{ marginBottom: 20 }}>
-          Answers are strictly grounded in your uploaded document context — not general knowledge.
+        <span className="card-section-label">Grounded Query Engine</span>
+        <h2>Query Indexed Documents</h2>
+        <p style={{ marginBottom: 18, color: "var(--muted)" }}>
+          Answers are strictly retrieved from your uploaded document context — never hallucinatory general knowledge.
         </p>
 
         <form onSubmit={handleAskQuestion}>
-          <label htmlFor="rag-question">Your Question</label>
+          <label htmlFor="rag-question">Clinical Question or Summary Request *</label>
           <textarea
             id="rag-question"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="e.g., What are my cholesterol levels and what does my doctor recommend?"
+            placeholder="e.g., What are my cholesterol levels and what follow-up recommendations are noted?"
             disabled={documents.length === 0}
             required
           />
 
           {documents.length === 0 && (
-            <p style={{ fontSize: "var(--text-xs)", color: "var(--muted)", marginTop: 6 }}>
-              Upload a document first to enable Q&amp;A.
+            <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+              💡 Upload a PDF document above to enable grounded context searching.
             </p>
           )}
 
           {askError && <p className="error-text" role="alert">{askError}</p>}
 
-          <div className="row">
+          <div className="row" style={{ marginTop: 16 }}>
             <button
               className="btn-primary"
               type="submit"
               disabled={asking || !question.trim() || documents.length === 0}
-              aria-label="Ask question about uploaded documents"
+              aria-label="Search document context and synthesize answer"
+              style={{ display: "flex", alignItems: "center", gap: 6 }}
             >
               {asking ? (
-                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Spinner size="sm" /> Searching context…
-                </span>
-              ) : "Ask Document AI"}
+                <>
+                  <Spinner size="sm" /> Searching Document Embeddings…
+                </>
+              ) : (
+                <>
+                  <Search size={15} /> Query Document AI
+                </>
+              )}
             </button>
           </div>
         </form>
       </div>
 
-      {/* Answer Card */}
+      {/* ── Grounded Answer Card with Citation Drawer ── */}
       {askResult && (
-        <div className="card card-elevated">
-          <h3>Answer</h3>
-          <p style={{ whiteSpace: "pre-line", lineHeight: "var(--lh-normal)", marginTop: 8 }}>
+        <div className="card-triage-accent accent-teal">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
+            <div className="card-section-label" style={{ margin: 0, color: "var(--ink)" }}>
+              Clinical Document Response
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span className="ai-disclaimer-chip">
+                <Sparkles size={11} /> Context-Grounded Answer
+              </span>
+              <span className="timestamp-text">{formatClinicalTimestamp(askTime)}</span>
+            </div>
+          </div>
+
+          <p style={{ whiteSpace: "pre-line", lineHeight: "var(--lh-normal)", margin: "0 0 16px", color: "var(--ink)" }}>
             {askResult.answer}
           </p>
 
+          {/* Source Citation Drawer */}
           {askResult.sources?.length > 0 && (
-            <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px dashed var(--line)" }}>
+            <div style={{ paddingTop: 14, borderTop: "1px dashed var(--line)" }}>
               <button
                 className="btn-ghost"
                 type="button"
                 onClick={() => setShowSources((p) => !p)}
                 aria-expanded={showSources}
                 aria-controls="sources-list"
-                style={{ padding: "6px 12px", fontSize: "var(--text-xs)" }}
+                style={{ padding: "5px 11px", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
               >
-                {showSources
-                  ? "▼ Hide Retrieved Sources"
-                  : `▶ View ${askResult.sources.length} Retrieved Sources`}
+                {showSources ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                <span>
+                  {showSources ? "Hide Citation Evidence" : `Source: ${askResult.sources.length} Context Chunks`}
+                </span>
               </button>
 
               {showSources && (
-                <div id="sources-list" style={{ marginTop: 14 }}>
+                <div id="sources-list" style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                   {askResult.sources.map((src, i) => (
                     <div
                       key={i}
@@ -234,15 +286,16 @@ export default function DocumentsPanel({ token }) {
                         border: "1px solid var(--line)",
                         borderRadius: "var(--radius-xs)",
                         padding: "10px 12px",
-                        marginBottom: 8,
-                        fontSize: "var(--text-xs)",
-                        color: "#3f4c48",
+                        fontSize: 12,
+                        color: "#384643",
                       }}
                     >
-                      <strong style={{ display: "block", marginBottom: 4, color: "var(--deep-teal)", fontSize: "var(--text-xs)" }}>
-                        Source Chunk {i + 1}
+                      <strong style={{ display: "block", marginBottom: 4, color: "var(--deep-teal)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        Citation Grounding Evidence Chunk {i + 1}
                       </strong>
-                      <p style={{ margin: 0, whiteSpace: "pre-line", lineHeight: "var(--lh-normal)" }}>{src}</p>
+                      <p style={{ margin: 0, whiteSpace: "pre-line", lineHeight: "var(--lh-normal)", fontSize: 12 }}>
+                        {src}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -250,7 +303,9 @@ export default function DocumentsPanel({ token }) {
             </div>
           )}
 
-          {askResult.disclaimer && <p className="disclaimer">{askResult.disclaimer}</p>}
+          <p className="disclaimer" style={{ marginTop: 14 }}>
+            {askResult.disclaimer || "Document Q&A synthesizes responses strictly from uploaded file text. Always review original lab reports and consult your health provider for clinical decisions."}
+          </p>
         </div>
       )}
     </div>
